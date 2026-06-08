@@ -5,7 +5,6 @@ export type LeaderboardEntry = {
   id: number;
   avatar_url: string | null;
   emoji: string | null;
-  username: string | null;
   nickname: string;
   net_raw: number;
   pending_net: number;
@@ -16,7 +15,7 @@ export type LeaderboardEntry = {
 export function getLeaderboard(): LeaderboardEntry[] {
   return db
     .prepare(
-      `SELECT u.id, u.avatar_url, u.emoji, u.username, u.nickname,
+      `SELECT u.id, u.avatar_url, u.emoji, u.nickname,
               COALESCE(SUM(l.delta), 0) AS net_raw,
               COALESCE(SUM(CASE WHEN m.coke_settled = 0 THEN l.delta ELSE 0 END), 0) AS pending_net,
               COUNT(l.id) AS bets,

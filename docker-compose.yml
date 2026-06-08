@@ -10,6 +10,9 @@ services:
       - PORT=8026
       - DB_PATH=/app/data/cup.db
       - SETTLER_USERNAMES=${SETTLER_USERNAMES:-}
+      - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY:-}
+      # Run periodic jobs inside the container (no host crontab needed).
+      - RUN_SCHEDULER=${RUN_SCHEDULER:-true}
       # Auth.js — set these in a .env file next to docker-compose.yml
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true

@@ -5,6 +5,7 @@ build/
 .cf-assets/
 
 # SQLite database (local data, do not commit)
+data/backups/*
 data/*.db
 data/*.db-wal
 data/*.db-shm

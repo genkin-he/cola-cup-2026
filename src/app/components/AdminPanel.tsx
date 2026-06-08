@@ -238,7 +238,7 @@ function PayoutList({
     <div className="space-y-2">
       {voteOdds && (
         <p className="text-xs text-text-mid">
-          群众赔率：主 {pct(voteOdds.home)}
+          同事赔率：主 {pct(voteOdds.home)}
           {voteOdds.draw != null && ` · 平 ${pct(voteOdds.draw)}`} · 客{" "}
           {pct(voteOdds.away)}
         </p>

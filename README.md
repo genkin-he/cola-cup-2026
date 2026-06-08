@@ -61,24 +61,25 @@ docker compose up -d --build
 
 ```bash
 docker compose exec app npm run fetch:odds      # 手动刷新 Polymarket 赔率
+docker compose exec app npm run sync:results    # 手动同步 football-data 比分并结算
 docker compose exec app npm run lock:snapshots  # 锁定已开赛比赛的赔率快照
 docker compose logs -f app                      # 看日志
 ```
 
-建议用宿主机 cron 定时刷新赔率与锁盘：
+定时任务**内置在容器里**（`RUN_SCHEDULER=true`，docker-compose 默认开）。容器启动后自动周期运行，无需宿主机 crontab：
 
-```cron
-# 每小时同步一次 Polymarket 概率（仅作对比展示，不影响结算）
-0  * * * * cd /path/to/cup && docker compose exec -T app npm run fetch:odds
-# 每 5 分钟检查并锁定"开赛前 1 小时"已截止的比赛（定格投票赔率作结算依据）
-*/5 * * * * cd /path/to/cup && docker compose exec -T app npm run lock:snapshots
-# 每天重导一次赛程：小组赛打完后，openfootball 会把淘汰赛 "2A" 解析成真实球队，
-# 重跑即按稳定编号 num 原地更新对阵（不会重复建场），随后 fetch:odds 即可抓到淘汰赛盘口
-0  6 * * * cd /path/to/cup && docker compose exec -T app npm run import:schedule
-```
+| 任务 | 默认间隔 | 覆盖变量 | 说明 |
+|---|---|---|---|
+| 赔率 `odds` | 60 分钟 | `CRON_ODDS_MIN` | 拉 Polymarket 概率（仅对比展示，带 UA / 退避防限流） |
+| 比分 `results` | 15 分钟 | `CRON_RESULTS_MIN` | 拉 football-data 已结束比赛，自动结算未结算的场次 |
+| 赛程 `schedule` | 1440 分钟 | `CRON_SCHEDULE_MIN` | 重导赛程（淘汰赛对阵确定后原地更新） |
+
+把 `RUN_SCHEDULER` 设为 `false` 可关掉内置调度，改用宿主机 cron 调上面的运维命令。
+
+> 群众赔率无需单独的锁盘定时任务：投票在开赛前 1 小时自动截止，结算时按当时（已固定）的投票分布定格作为结算依据。
 
 > **赔率同步**：每小时一次（Polymarket 概率，仅展示）。
-> **比赛结果**：由**结算账号在 `/admin` 手动录入**触发结算（无自动同步）。
+> **比赛结果**：默认由 **football-data.org 自动同步**比分并结算；结算账号也可在 `/admin` 手动录入或**修正比分**（不配 `FOOTBALL_DATA_API_KEY` 则纯手动）。
 > **结算赔率**：用**群众投票赔率**（开赛前 1 小时锁定的投票分布），Polymarket 仅作对比。
 
 ## 结算后台
@@ -87,9 +88,9 @@ docker compose logs -f app                      # 看日志
 
 结算分两阶段：
 
-- **录入结果**（线上）：选择胜/平/负 + 比分 → 触发该场结算（按锁定的投票赔率写入账本、更新排名）。
+- **录入结果**（线上）：比分默认由 football-data 自动同步并结算；也可手动选胜/平/负 + 比分，或对已结算比赛**修正比分**。按锁定的投票赔率写入账本、更新排名。
 - **补录赔率**：Polymarket 未开盘的场次，可手动录入 0–1 概率作为结算依据。
-- **线下结算可乐**：比赛结清后，按「线下收发名单」实际收取/发放可乐，完成后点「🥤 标记可乐已结清」。`/me` 与排行榜据此区分「待结/已结清」；净瓶数（战绩）保持不变。
+- **线下结算可乐**：「可乐总账」按人汇总应买/应收 + 平台可乐池，每场还显示群众赔率与逐人应交/应收；线下收发后点「🥤 标记可乐已结清」或「✅ 全部平账」。`/me` 与排行榜据此区分「待结/已结清」，净瓶数（战绩）不变。
 
 ## 玩法说明
 

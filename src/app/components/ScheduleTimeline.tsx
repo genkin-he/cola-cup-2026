@@ -50,6 +50,9 @@ const RESULT_LABEL: Record<Pick, string> = {
   draw: "平局",
   away: "客胜",
 };
+const DIVERGENCE_HOT_THRESHOLD = 10;
+const DIVERGENCE_TIP =
+  "市场（聪明钱）与同事看法分歧大 —— 用同事赔率下注可能赢更多可乐";
 
 function matchesStatus(status: MatchStatus, filter: StatusFilter): boolean {
   if (filter === "all") return true;
@@ -108,6 +111,31 @@ function MatchTeams({ row }: { row: RowVM }) {
   );
 }
 
+function pickMarketLeader(
+  market: { home: number | null; draw: number | null; away: number | null },
+): { pick: Pick; pct: number } | null {
+  const entries: [Pick, number | null][] = [
+    ["home", market.home],
+    ["draw", market.draw],
+    ["away", market.away],
+  ];
+  let best: { pick: Pick; pct: number } | null = null;
+  for (const [pick, pct] of entries) {
+    if (pct == null) continue;
+    if (!best || pct > best.pct) best = { pick, pct };
+  }
+  return best;
+}
+
+function crowdPctFor(row: RowVM, pick: Pick): number | null {
+  if (row.crowd.voters === 0) return null;
+  return pick === "home"
+    ? row.crowd.homePct
+    : pick === "draw"
+      ? row.crowd.drawPct
+      : row.crowd.awayPct;
+}
+
 function MatchBig({ row }: { row: RowVM }) {
   if (row.settled && row.resultPick) {
     return (
@@ -117,39 +145,55 @@ function MatchBig({ row }: { row: RowVM }) {
       </div>
     );
   }
-  if (row.crowd.leaderPick && row.crowd.leaderPct != null) {
-    const pick = row.crowd.leaderPick;
-    const marketPct = row.market ? row.market[pick] : null;
+
+  const marketLeader = row.market ? pickMarketLeader(row.market) : null;
+  if (marketLeader) {
+    const crowdPct = crowdPctFor(row, marketLeader.pick);
+    const diff =
+      crowdPct != null ? marketLeader.pct - crowdPct : null;
+    let dv: React.ReactNode = null;
+    if (diff != null) {
+      const absDiff = Math.abs(diff);
+      if (absDiff >= DIVERGENCE_HOT_THRESHOLD) {
+        const lead = diff > 0 ? "市场更看好" : "同事更看好";
+        dv = (
+          <div className="dv hot">
+            <span
+              className="spark"
+              data-tip={DIVERGENCE_TIP}
+              tabIndex={0}
+              role="button"
+              aria-label="分歧说明"
+            >
+              ⚡
+            </span>
+            {lead} +{absDiff}
+          </div>
+        );
+      } else {
+        dv = <div className="dv aligned">同事 {crowdPct}% · 看法接近</div>;
+      }
+    }
     return (
       <div className="big">
-        <div className="pct">{row.crowd.leaderPct}%</div>
-        <div className="cap">
-          群众·{PICK_SHORT[pick]}
-          {marketPct != null && (
-            <>
-              {" · "}
-              <span className="mk">市场 {marketPct}%</span>
-            </>
-          )}
-        </div>
+        <div className="srclbl">市场·{PICK_SHORT[marketLeader.pick]}</div>
+        <div className="pct">{marketLeader.pct}%</div>
+        {dv}
       </div>
     );
   }
-  if (row.market) {
-    const marketLeader: Pick =
-      (row.market.home ?? 0) >= (row.market.away ?? 0) ? "home" : "away";
-    const pct = row.market[marketLeader];
-    if (pct != null) {
-      return (
-        <div className="big">
-          <div className="pct">
-            <span className="mk">{pct}%</span>
-          </div>
-          <div className="cap">市场·{PICK_SHORT[marketLeader]} · 暂无群众</div>
-        </div>
-      );
-    }
+
+  if (row.crowd.leaderPick && row.crowd.leaderPct != null) {
+    const pick = row.crowd.leaderPick;
+    return (
+      <div className="big">
+        <div className="srclbl cr">同事·{PICK_SHORT[pick]}</div>
+        <div className="pct">{row.crowd.leaderPct}%</div>
+        <div className="cap">暂无市场对照</div>
+      </div>
+    );
   }
+
   return (
     <div className="big">
       <div className="cap">暂无赔率</div>

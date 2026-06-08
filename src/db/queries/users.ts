@@ -2,11 +2,19 @@ import { db } from "../client";
 
 export type User = {
   id: number;
-  twitter_id: string | null;
-  username: string | null;
   nickname: string;
   avatar_url: string | null;
   emoji: string | null;
+  created_at: number;
+};
+
+export type Account = {
+  id: number;
+  user_id: number;
+  provider: string;
+  provider_account_id: string;
+  username: string | null;
+  avatar_url: string | null;
   created_at: number;
 };
 
@@ -18,52 +26,89 @@ export function getUserById(id: number): User | null {
   );
 }
 
-export function getUserByTwitterId(twitterId: string): User | null {
+export function getUserByProviderAccount(
+  provider: string,
+  providerAccountId: string,
+): User | null {
   return (
-    (db.prepare("SELECT * FROM users WHERE twitter_id = ?").get(twitterId) as
-      | User
-      | undefined) ?? null
+    (db
+      .prepare(
+        `SELECT u.* FROM users u
+         JOIN accounts a ON a.user_id = u.id
+         WHERE a.provider = ? AND a.provider_account_id = ?`,
+      )
+      .get(provider, providerAccountId) as User | undefined) ?? null
   );
 }
 
-export function upsertTwitterUser(input: {
-  twitterId: string;
+export function getAccountsByUserId(userId: number): Account[] {
+  return db
+    .prepare("SELECT * FROM accounts WHERE user_id = ? ORDER BY created_at")
+    .all(userId) as Account[];
+}
+
+/**
+ * Link an OAuth identity to a user, creating the user on first login.
+ * Provider handle/avatar are refreshed on every login; the user's edited
+ * nickname/emoji are preserved, while the display avatar tracks the latest login.
+ */
+export function upsertOAuthUser(input: {
+  provider: string;
+  providerAccountId: string;
   username: string | null;
   name: string;
   avatarUrl: string | null;
 }): User {
-  const existing = getUserByTwitterId(input.twitterId);
+  const existing = getUserByProviderAccount(
+    input.provider,
+    input.providerAccountId,
+  );
   if (existing) {
-    // Refresh handle/avatar from Twitter, but keep the user's edited nickname.
     db.prepare(
-      `UPDATE users SET username = @username, avatar_url = @avatarUrl
-       WHERE twitter_id = @twitterId`,
+      `UPDATE accounts SET username = @username, avatar_url = @avatarUrl
+       WHERE provider = @provider AND provider_account_id = @providerAccountId`,
     ).run({
       username: input.username,
       avatarUrl: input.avatarUrl,
-      twitterId: input.twitterId,
+      provider: input.provider,
+      providerAccountId: input.providerAccountId,
     });
-    return getUserByTwitterId(input.twitterId)!;
+    db.prepare("UPDATE users SET avatar_url = @avatarUrl WHERE id = @id").run({
+      avatarUrl: input.avatarUrl,
+      id: existing.id,
+    });
+    return getUserById(existing.id)!;
   }
 
-  const info = db
-    .prepare(
-      `INSERT INTO users (twitter_id, username, nickname, avatar_url, created_at)
-       VALUES (@twitterId, @username, @nickname, @avatarUrl, @now)`,
-    )
-    .run({
-      twitterId: input.twitterId,
+  const create = db.transaction(() => {
+    const now = Date.now();
+    const info = db
+      .prepare(
+        `INSERT INTO users (nickname, avatar_url, emoji, created_at)
+         VALUES (@nickname, @avatarUrl, NULL, @now)`,
+      )
+      .run({ nickname: input.name, avatarUrl: input.avatarUrl, now });
+    const userId = Number(info.lastInsertRowid);
+    db.prepare(
+      `INSERT INTO accounts
+         (user_id, provider, provider_account_id, username, avatar_url, created_at)
+       VALUES (@userId, @provider, @providerAccountId, @username, @avatarUrl, @now)`,
+    ).run({
+      userId,
+      provider: input.provider,
+      providerAccountId: input.providerAccountId,
       username: input.username,
-      nickname: input.name,
       avatarUrl: input.avatarUrl,
-      now: Date.now(),
+      now,
     });
-  return getUserById(Number(info.lastInsertRowid))!;
+    return userId;
+  });
+  return getUserById(create())!;
 }
 
 const MAX_NICKNAME = 16;
 
-/** Update editable profile. emoji=null clears the override (revert to Twitter photo). */
+/** Update editable profile. emoji=null clears the override (revert to provider photo). */
 export function updateProfile(
   userId: number,
   nickname: string,

@@ -37,15 +37,13 @@ const pacifico = Pacifico({
 
 export const metadata: Metadata = {
   title: "CUP · 2026 世界杯可乐竞猜",
-  description: "赛前投票预测，赛后按群众投票赔率结算。猜错了，按净瓶数给同事买饮料 🥤",
+  description: "赛前投票预测，赛后按同事投票赔率结算。猜错了，按净瓶数给同事买饮料 🥤",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0f0c",
+  themeColor: "#fbf7f0",
   viewportFit: "cover",
 };
-
-const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('cup-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default async function RootLayout({
   children,
@@ -64,12 +62,8 @@ export default async function RootLayout({
   return (
     <html
       lang="zh"
-      data-theme="dark"
       className={`${bigShoulders.variable} ${spaceGrotesk.variable} ${splineMono.variable} ${pacifico.variable}`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
       <body>
         <Nav user={navUser} />
         <main className="shell">{children}</main>

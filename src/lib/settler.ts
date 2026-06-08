@@ -1,5 +1,5 @@
 import { getCurrentUser } from "./identity";
-import type { User } from "../db/queries/users";
+import { getAccountsByUserId, type User } from "../db/queries/users";
 
 function settlerHandles(): Set<string> {
   return new Set(
@@ -10,14 +10,16 @@ function settlerHandles(): Set<string> {
   );
 }
 
-/** A settler is any logged-in user whose X username or twitter_id is configured. */
+/** A settler is any logged-in user with a linked account whose provider handle
+ *  or provider account id is listed in SETTLER_USERNAMES. */
 export function isSettler(user: User | null): boolean {
   if (!user) return false;
   const handles = settlerHandles();
   if (handles.size === 0) return false;
-  return (
-    (!!user.username && handles.has(user.username.toLowerCase())) ||
-    (!!user.twitter_id && handles.has(user.twitter_id.toLowerCase()))
+  return getAccountsByUserId(user.id).some(
+    (account) =>
+      (!!account.username && handles.has(account.username.toLowerCase())) ||
+      handles.has(account.provider_account_id.toLowerCase()),
   );
 }
 

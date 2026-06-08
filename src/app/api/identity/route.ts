@@ -12,7 +12,6 @@ export async function GET() {
       id: user.id,
       nickname: user.nickname,
       avatarUrl: user.avatar_url,
-      username: user.username,
     },
   });
 }

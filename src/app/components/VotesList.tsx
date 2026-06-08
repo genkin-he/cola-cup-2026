@@ -25,7 +25,7 @@ export function VotesList({
     <div className="voters">
       <hr className="rule" style={{ marginTop: 24 }} />
       <h3 className="disp" style={{ paddingTop: 18 }}>
-        群众投票 · {votes.length} 人
+        同事投票 · {votes.length} 人
       </h3>
       <hr className="rule" />
       {votes.length === 0 ? (

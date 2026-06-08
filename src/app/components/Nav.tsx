@@ -23,29 +23,6 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-function ThemeToggle() {
-  function toggle() {
-    const root = document.documentElement;
-    const next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    root.setAttribute("data-theme", next);
-    try {
-      localStorage.setItem("cup-theme", next);
-    } catch {}
-  }
-  return (
-    <button
-      type="button"
-      className="theme-toggle"
-      aria-label="切换深浅模式"
-      title="切换深浅模式"
-      onClick={toggle}
-    >
-      <span className="moon">☾</span>
-      <span className="sun">☀</span>
-    </button>
-  );
-}
-
 export function Nav({ user }: { user: NavUser }) {
   const pathname = usePathname();
   const tabs: Tab[] = user?.isSettler
@@ -58,7 +35,7 @@ export function Nav({ user }: { user: NavUser }) {
         <div className="shell">
           <div className="bar">
             <Link className="wm" href="/">
-              CUP<span className="dot">.</span>
+              CUP<span className="dot">.</span><span className="yr">2026</span>
             </Link>
             <nav className="nav">
               {tabs.map((tab) => (
@@ -82,7 +59,6 @@ export function Nav({ user }: { user: NavUser }) {
                   登录
                 </Link>
               )}
-              <ThemeToggle />
             </div>
           </div>
         </div>

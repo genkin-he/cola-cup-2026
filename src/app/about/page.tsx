@@ -11,7 +11,10 @@ export default function AboutPage() {
           <em>是请客</em> 🥤
         </h1>
         <p className="intro">
-          <b style={{ color: "var(--hi)" }}>CUP</b> 是同事之间的世界杯预测小游戏 —— 赛前投票看好谁，赛后按大家的投票赔率结算。
+          <b style={{ color: "var(--hi)" }}>
+            CUP<span style={{ color: "var(--red)" }}>.</span>2026
+          </b>{" "}
+          是同事之间的世界杯预测小游戏 —— 赛前投票看好谁，赛后按大家的投票赔率结算。
           <b style={{ color: "var(--hi)" }}>不涉及真钱</b>，输赢都用饮料：猜错的人给大家买几瓶，仅此而已。
         </p>
 
@@ -67,7 +70,7 @@ export default function AboutPage() {
             </li>
             <li>
               <span className="t">
-                <b>开赛前 1 小时锁定</b>，结算赔率以群众投票为准。<small>Polymarket 市场数据全程仅作对比参考。</small>
+                <b>开赛前 1 小时锁定</b>，结算赔率以同事投票为准。<small>Polymarket 市场数据全程仅作对比参考。</small>
               </span>
             </li>
             <li>
@@ -77,7 +80,12 @@ export default function AboutPage() {
             </li>
             <li>
               <span className="t">
-                <b>取整规则</b>：赢家应收向下取整、输家应买向上取整，差额进平台可乐池。
+                <b>取整规则</b>：赢家应收<b>向下取整</b>、输家应买<b>向上取整</b>。<small>例：应收 2.6 瓶 → 收 2 瓶；应买 1.2 瓶 → 买 2 瓶。</small>
+              </span>
+            </li>
+            <li>
+              <span className="t">
+                <b>共享池</b>：取整产生的零头归平台，统一放进<b>共享可乐池</b>，大家都能免费喝。
               </span>
             </li>
           </ol>
@@ -85,7 +93,7 @@ export default function AboutPage() {
 
         <div className="sec">
           <h2 className="disp">数据来源</h2>
-          <p className="sub">市场赔率来自 Polymarket，仅供对比；结算只看群众投票。</p>
+          <p className="sub">市场赔率来自 Polymarket，仅供对比；结算只看同事投票。</p>
           <div className="source">
             <a
               className="market-link"

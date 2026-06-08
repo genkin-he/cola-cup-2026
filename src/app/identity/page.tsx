@@ -1,8 +1,14 @@
 import { getCurrentUser } from "../../lib/identity";
+import { getAccountsByUserId } from "../../db/queries/users";
 import { signIn, signOut } from "../../auth";
 import { ProfileForm } from "../components/ProfileForm";
 
 export const dynamic = "force-dynamic";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  twitter: "𝕏",
+  github: "GitHub",
+};
 
 export default async function IdentityPage() {
   const user = await getCurrentUser();
@@ -29,10 +35,17 @@ export default async function IdentityPage() {
     );
   }
 
+  const accounts = getAccountsByUserId(user.id);
+
   return (
     <section className="id-page">
       <h1 className="disp">你的<br/><em>身份</em> 🎭</h1>
-      {user.username && <p className="lead">已用 𝕏 登录 · @{user.username}</p>}
+      {accounts.map((account) => (
+        <p key={account.id} className="lead">
+          已用 {PROVIDER_LABELS[account.provider] ?? account.provider} 登录
+          {account.username ? ` · @${account.username}` : ""}
+        </p>
+      ))}
       <ProfileForm initialNickname={user.nickname} initialEmoji={user.emoji} avatarUrl={user.avatar_url} />
       <form action={signOutAction} className="signout">
         <button type="submit">退出登录</button>

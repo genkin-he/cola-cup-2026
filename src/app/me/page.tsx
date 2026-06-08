@@ -65,6 +65,7 @@ export default async function MePage() {
   return (
     <section>
       <div className="me">
+        <h1 className="page-h disp">我的账本 🥤</h1>
         <div className="who">
           <span className="em">{user.emoji ?? "👤"}</span>
           <span>
@@ -82,7 +83,7 @@ export default async function MePage() {
         </div>
         <div className={verdictClass}>{verdictText}</div>
         <p className="note">
-          输家应买向上取整、赢家应收向下取整，差额进平台可乐池。结算以群众投票赔率为准。
+          输家应买向上取整、赢家应收向下取整，差额进平台可乐池。结算以同事投票赔率为准。
         </p>
       </div>
 

@@ -100,18 +100,17 @@ export default async function MatchPage({
 
   return (
     <section>
-      <Link href="/" className="back">
-        ← 返回赛程
-      </Link>
-      <hr className="rule ink" />
-
-      <div className="detail-top">
-        <span>
+      <div className="detail-head">
+        <Link href="/" className="back-btn">
+          <span className="bk-arrow">←</span> 返回赛程
+        </Link>
+        <span className="detail-stage">
           {stageLabel(match.stage)}
           {match.group_name ? ` · ${match.group_name}` : ""}
         </span>
         <StatusBadge status={status} />
       </div>
+      <hr className="rule" />
 
       <div className="detail-vs">
         <span className="team">

@@ -9,6 +9,7 @@
     "db:migrate": "tsx src/scripts/migrate.ts",
     "import:schedule": "tsx src/scripts/importSchedule.ts",
     "fetch:odds": "tsx src/scripts/fetchOdds.ts",
+    "sync:results": "tsx src/scripts/syncResults.ts",
     "lock:snapshots": "tsx src/scripts/lockSnapshots.ts"
   },
   "dependencies": {

@@ -109,19 +109,15 @@ export default function HomePage() {
 
   return (
     <section>
-      <div className="hero">
-        <div className="kick">2026 FIFA 世界杯 · 美加墨</div>
-        <h1 className="disp">
+      <div className="masthead">
+        <h1 className="headline disp">
           按赔率
           <br />
           <em>赢可乐</em> 🥤
         </h1>
-        <p className="lead">
-          赛前投票预测，赛后按群众投票赔率结算。猜错了，按净瓶数给同事买饮料。市场数据取自
-          Polymarket，仅供对比。
-          <Link href="/about" className="inline-amber">
-            什么是「可乐」？
-          </Link>
+        <p className="tagline">
+          同事投票结算，猜错给同事买饮料。
+          <Link href="/about">什么是「可乐」？</Link>
         </p>
       </div>
       <ScheduleTimeline rows={rows} todayKey={todayKey} />
