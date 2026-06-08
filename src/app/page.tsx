@@ -3,7 +3,8 @@ import {
   getAllMatches,
   getLatestPolymarketOdds,
 } from "../db/queries/matches";
-import { getAllTallies } from "../db/queries/votes";
+import { getAllTallies, getUserVotedMatchIds } from "../db/queries/votes";
+import { getCurrentUser } from "../lib/identity";
 import { deriveStatus } from "../lib/matchState";
 import { stageLabel, allowsDraw, type Pick } from "../lib/stage";
 import { computeVoteOdds } from "../lib/voteOdds";
@@ -24,11 +25,13 @@ function pct(p: number | null | undefined): number | null {
   return p == null ? null : Math.round(p * 100);
 }
 
-export default function HomePage() {
+export default async function HomePage() {
   const now = Date.now();
   const matches = getAllMatches();
   const oddsMap = getLatestPolymarketOdds();
   const tallies = getAllTallies();
+  const user = await getCurrentUser();
+  const votedIds = user ? getUserVotedMatchIds(user.id) : new Set<number>();
   const todayKey = dateKey(now);
 
   const rows: RowVM[] = matches.map((match) => {
@@ -80,6 +83,7 @@ export default function HomePage() {
       groupKey: groupLetter,
       groupName: match.group_name,
       status,
+      voted: votedIds.has(match.id),
       home: { name: match.home.name, flag: match.home.flag },
       away: { name: match.away.name, flag: match.away.flag },
       settled: !!match.settled,
@@ -121,7 +125,7 @@ export default function HomePage() {
           <em>赢可乐</em> 🥤
         </h1>
         <p className="tagline">
-          同事投票结算，猜错给同事买饮料。
+          同事预测结算，猜错给同事买饮料。
           <Link href="/about">什么是「可乐」？</Link>
         </p>
       </div>

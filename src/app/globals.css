@@ -103,17 +103,27 @@ a {
 }
 .wm {
   font-family: var(--disp);
-  font-weight: 900;
-  font-size: 30px;
-  line-height: 0.8;
-  letter-spacing: 0.01em;
+  line-height: 0.9;
+  display: inline-flex;
+  flex-direction: column;
 }
-.wm .dot {
-  color: var(--red);
+.wm .wm-pre {
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--mid);
+  white-space: nowrap;
+  line-height: 1;
 }
 .wm .yr {
-  color: var(--mid);
-  font-weight: 700;
+  font-family: var(--disp);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--hi);
+  letter-spacing: 0.01em;
+  line-height: 0.85;
+  margin-top: 1px;
 }
 .nav {
   display: flex;
@@ -259,14 +269,19 @@ main {
   transition: background 0.15s ease;
   color: inherit;
 }
+.mrow-anchor {
+  scroll-margin-top: 96px;
+}
 .mrow.no-link {
   cursor: default;
 }
-.mrow:hover {
-  background: color-mix(in srgb, var(--hi) 4%, transparent);
-}
-.mrow.no-link:hover {
-  background: transparent;
+@media (hover: hover) {
+  .mrow:hover {
+    background: color-mix(in srgb, var(--hi) 4%, transparent);
+  }
+  .mrow.no-link:hover {
+    background: transparent;
+  }
 }
 .mrow .meta {
   grid-column: 1 / -1;
@@ -352,11 +367,17 @@ main {
   color: var(--low);
 }
 .mrow .big .dv.hot {
-  color: var(--win);
   font-weight: 600;
-  background: color-mix(in srgb, var(--win) 13%, transparent);
   padding: 3px 9px;
   border-radius: 999px;
+}
+.mrow .big .dv.hot.mk {
+  color: var(--market);
+  background: color-mix(in srgb, var(--market) 13%, transparent);
+}
+.mrow .big .dv.hot.cr {
+  color: var(--crowd);
+  background: color-mix(in srgb, var(--crowd) 13%, transparent);
 }
 .mrow .big .dv.hot .spark {
   font-size: 12px;
@@ -425,6 +446,12 @@ main {
 }
 .badge.open {
   color: var(--win);
+}
+.badge.voted {
+  color: var(--win);
+  background: color-mix(in srgb, var(--win) 14%, transparent);
+  border-radius: 999px;
+  padding: 2px 9px;
 }
 .badge.scheduled {
   color: var(--mid);
@@ -578,6 +605,20 @@ main {
 .oc .legend .lg i.mk {
   background: var(--market);
 }
+.oc .legend .lg .lg-tag {
+  font-size: 11px;
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 1px;
+}
+.oc .legend .lg .lg-tag.warn {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 15%, transparent);
+}
+.oc .legend .lg .lg-tag.info {
+  color: var(--low);
+  background: color-mix(in srgb, var(--low) 15%, transparent);
+}
 .oc .market-link {
   display: inline-flex;
   align-items: center;
@@ -635,15 +676,27 @@ main {
 }
 .odds-head .o-lead {
   font-family: var(--num);
-  font-size: 12.5px;
-  color: var(--win);
-  white-space: nowrap;
-}
-.odds-head .o-lead.fav {
+  font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+  padding: 3px 9px;
+  border-radius: 999px;
+  line-height: 1.4;
 }
-.odds-head .o-lead.dim {
+.odds-head .o-lead.mk-lead {
+  color: var(--market);
+  background: color-mix(in srgb, var(--market) 12%, transparent);
+}
+.odds-head .o-lead.cr-lead {
+  color: var(--crowd);
+  background: color-mix(in srgb, var(--crowd) 12%, transparent);
+}
+.odds-head .o-lead.tie {
   color: var(--low);
+  background: color-mix(in srgb, var(--low) 16%, transparent);
+}
+.odds-head .o-lead.mk-lead.strong {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--market) 38%, transparent);
 }
 .odds-bars {
   display: flex;
@@ -704,20 +757,6 @@ main {
 .ob .ob-pct.mk {
   color: var(--market);
 }
-.oc-foot {
-  font-size: 12px;
-  color: var(--low);
-  line-height: 1.55;
-  padding: 14px 0 0;
-}
-.oc-foot b {
-  color: var(--mid);
-}
-.oc-foot a {
-  color: var(--market);
-  border-bottom: 1px solid color-mix(in srgb, var(--market) 45%, transparent);
-}
-
 /* vote panel */
 .vp {
   padding: 24px 0 4px;
@@ -835,6 +874,95 @@ main {
   font-size: 12px;
   color: var(--low);
   padding: 12px 0 0;
+}
+.vp-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--win) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--win) 28%, transparent);
+  font-size: 13.5px;
+  color: var(--hi);
+}
+.vp-status .vp-status-ic {
+  font-size: 15px;
+  line-height: 1;
+}
+.vp-status .vp-status-tx b {
+  color: var(--win);
+  font-family: var(--num);
+}
+.vp-status .vp-status-dirty {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--amber);
+  white-space: nowrap;
+}
+.vp-status.just {
+  animation: vpStatusPulse 0.9s ease;
+}
+@keyframes vpStatusPulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--win) 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--win) 0%, transparent);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.vp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 0 0;
+}
+.vp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  background: transparent;
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+  padding: 7px 14px;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+  white-space: nowrap;
+}
+.vp-back:hover {
+  background: var(--elevated);
+  border-color: var(--hi);
+  color: var(--hi);
+}
+.vp-back .bk-arrow {
+  font-size: 15px;
+  line-height: 1;
+}
+.vp-back.go {
+  color: #fff;
+  background: var(--win);
+  border-color: var(--win);
+}
+.vp-back.go:hover {
+  filter: brightness(1.06);
+  color: #fff;
+}
+.vp-hint {
+  font-size: 12px;
+  color: var(--low);
 }
 .vp .formerror {
   text-align: center;

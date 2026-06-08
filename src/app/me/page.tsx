@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getUserLedger, getUserNet } from "../../db/queries/ledger";
 import { getCurrentUser } from "../../lib/identity";
 import { formatBottles } from "../../lib/format";
@@ -16,7 +17,7 @@ export default async function MePage() {
           <em>身份</em> 👤
         </h1>
         <p className="lead">登录后才能查看你的可乐账本。</p>
-        <a
+        <Link
           href="/identity"
           className="cta"
           style={{
@@ -27,7 +28,7 @@ export default async function MePage() {
           }}
         >
           🥤 设置身份
-        </a>
+        </Link>
       </section>
     );
   }
@@ -57,7 +58,7 @@ export default async function MePage() {
           {formatBottles(netRaw)}
           <small> 瓶</small>
         </div>
-        <p className="note">按同事投票赔率结算，每场比赛的输赢见下。</p>
+        <p className="note">按同事预测赔率结算，每场比赛的输赢见下。</p>
       </div>
 
       <div className="ledh disp">结算明细</div>

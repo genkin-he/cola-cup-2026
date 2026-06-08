@@ -4,6 +4,7 @@ import {
   getMatch,
   getMatchOdds,
   getPolyMarketSlug,
+  getAllMatches,
   type OddsRow,
 } from "../../../db/queries/matches";
 import {
@@ -34,6 +35,17 @@ function marketD(odds: OddsRow | null, key: Pick): number | null {
   return key === "home" ? odds.d_home : key === "draw" ? odds.d_draw : odds.d_away;
 }
 
+type SchedMatch = ReturnType<typeof getAllMatches>[number];
+
+function pickNextMatchId(all: SchedMatch[], currentId: number): number | null {
+  const sorted = [...all].sort(
+    (a, b) => a.kickoff_at - b.kickoff_at || a.id - b.id,
+  );
+  const idx = sorted.findIndex((m) => m.id === currentId);
+  if (idx === -1) return null;
+  return sorted[idx + 1]?.id ?? null;
+}
+
 export default async function MatchPage({
   params,
 }: {
@@ -44,6 +56,7 @@ export default async function MatchPage({
   if (!match) notFound();
 
   const user = await getCurrentUser();
+  const nextMatchId = user ? pickNextMatchId(getAllMatches(), match.id) : null;
   const { polymarket, locked } = getMatchOdds(match.id);
   const marketOdds = locked ?? polymarket;
   const tally = getVoteTally(match.id);
@@ -101,7 +114,7 @@ export default async function MatchPage({
   return (
     <section>
       <div className="detail-head">
-        <Link href="/" className="back-btn">
+        <Link href={`/#m-${match.id}`} className="back-btn">
           <span className="bk-arrow">←</span> 返回赛程
         </Link>
         <span className="detail-stage">
@@ -149,6 +162,7 @@ export default async function MatchPage({
             hasIdentity={!!user}
             initialPick={(userVote?.pick as Pick) ?? null}
             initialStake={userVote?.stake ?? null}
+            nextMatchId={nextMatchId}
           />
           <VotesList
             votes={votes}

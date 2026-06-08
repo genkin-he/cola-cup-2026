@@ -1,4 +1,5 @@
 import { PICK_LABELS, type Pick } from "../../lib/stage";
+import { LEAD_DIVERGENCE_PCT } from "../../lib/voteOdds";
 
 export type OutcomeOdds = {
   key: Pick;
@@ -38,6 +39,20 @@ function findFeaturedIndex(outcomes: OutcomeOdds[]): number {
   return bestIndex;
 }
 
+function findLeadIndex(outcomes: OutcomeOdds[]): number {
+  let bestIndex = -1;
+  let bestDiff = -1;
+  outcomes.forEach((o, i) => {
+    if (o.crowdP == null || o.crowdP <= 0 || o.marketP == null) return;
+    const diff = Math.abs(o.marketP - o.crowdP);
+    if (diff > bestDiff) {
+      bestDiff = diff;
+      bestIndex = i;
+    }
+  });
+  return bestIndex;
+}
+
 function renderLead(
   crowdP: number | null,
   marketP: number | null,
@@ -45,28 +60,17 @@ function renderLead(
 ) {
   if (crowdP == null || marketP == null) return null;
   const diff = Math.round((marketP - crowdP) * 100);
-  if (diff === 0) {
-    return (
-      <span className="o-lead" style={{ color: "var(--low)" }}>
-        持平
-      </span>
-    );
+  if (Math.abs(diff) < LEAD_DIVERGENCE_PCT) {
+    return null;
   }
   if (diff > 0) {
-    if (isFeatured) {
-      return <span className="o-lead fav">市场更看好 +{diff}</span>;
-    }
     return (
-      <span className="o-lead" style={{ color: "var(--low)" }}>
-        市场更看好 +{diff}
+      <span className={"o-lead mk-lead" + (isFeatured ? " strong" : "")}>
+        市场更看好
       </span>
     );
   }
-  return (
-    <span className="o-lead" style={{ color: "var(--low)" }}>
-      同事更看好 +{Math.abs(diff)}
-    </span>
-  );
+  return <span className="o-lead cr-lead">同事更看好</span>;
 }
 
 export function OddsCompare({
@@ -83,25 +87,19 @@ export function OddsCompare({
   polymarketUrl?: string | null;
 }) {
   const featuredIndex = findFeaturedIndex(outcomes);
+  const leadIndex = findLeadIndex(outcomes);
   const hasMarket = outcomes.some((o) => o.marketP != null);
   const crowdLegend = crowdTotal > 0 ? `同事 · ${crowdTotal} 人` : "同事";
-
-  const footerParts: string[] = [];
-  if (lowSample && crowdTotal > 0) {
-    footerParts.push(" · 同事样本不足，赔率仅供参考。");
-  }
-  if (!hasMarket) {
-    footerParts.push(" · Polymarket 暂未对该场开盘。");
-  }
+  const showLowSample = lowSample && crowdTotal > 0;
 
   return (
     <div className="oc">
       <h2 className="disp">赔率对比</h2>
       <p className="oc-note">
-        每个结果都对比两个来源 —— <b className="mk">⚽ Polymarket 市场</b> 与{" "}
-        <b className="cr">🥤 同事投票</b>。
-        <b style={{ color: "var(--hi)" }}>结算只看同事投票</b>
-        ，市场仅作参考。
+        每个结果对比两个来源 —— <b className="mk">⚽ Polymarket 市场</b> 与{" "}
+        <b className="cr">🥤 同事预测</b>。
+        <b style={{ color: "var(--hi)" }}>结算只看同事预测</b>
+        （开赛前 1 小时锁定），市场仅作参考。
       </p>
 
       <div className="bar-head">
@@ -109,10 +107,16 @@ export function OddsCompare({
           <span className="lg">
             <i className="mk" />
             市场
+            {!hasMarket && <span className="lg-tag info">未开盘</span>}
           </span>
           <span className="lg">
             <i className="cr" />
             {crowdLegend}
+            {showLowSample && (
+              <span className="lg-tag warn" title="样本不足，赔率仅供参考">
+                样本少
+              </span>
+            )}
           </span>
         </div>
         {polymarketUrl && (
@@ -141,7 +145,7 @@ export function OddsCompare({
                 {o.teamLabel}
                 {showSmall && <small>{pickLabel}</small>}
               </span>
-              {renderLead(o.crowdP, o.marketP, isFeatured)}
+              {i === leadIndex && renderLead(o.crowdP, o.marketP, isFeatured)}
             </div>
             <div className="odds-bars">
               <div className="ob">
@@ -168,17 +172,6 @@ export function OddsCompare({
           </div>
         );
       })}
-
-      <p className="oc-foot">
-        🥤 结算以 <b>同事投票赔率</b> 为准（开赛前 1 小时锁定）· Polymarket
-        仅作对比。
-        {polymarketUrl && (
-          <a href={polymarketUrl} target="_blank" rel="noopener noreferrer">
-            前往市场数据 ↗
-          </a>
-        )}
-        {footerParts.join("")}
-      </p>
     </div>
   );
 }

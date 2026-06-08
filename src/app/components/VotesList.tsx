@@ -25,12 +25,12 @@ export function VotesList({
     <div className="voters">
       <hr className="rule" style={{ marginTop: 24 }} />
       <h3 className="disp" style={{ paddingTop: 18 }}>
-        同事投票 · {votes.length} 人
+        同事预测 · {votes.length} 人
       </h3>
       <hr className="rule" />
       {votes.length === 0 ? (
         <p style={{ padding: "20px 0", color: "var(--low)", fontSize: 13 }}>
-          还没有人投票，来当第一个 🥤
+          还没有人预测，来当第一个 🥤
         </p>
       ) : (
         votes.map((vote) => {

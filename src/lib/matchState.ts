@@ -45,7 +45,7 @@ export const STATUS_META: Record<
 > = {
   scheduled: { label: "未开放", tone: "text-text-low" },
   upcoming: { label: "待开盘", tone: "text-text-mid" },
-  open: { label: "可投票", tone: "text-win" },
+  open: { label: "可预测", tone: "text-win" },
   locked: { label: "已截止", tone: "text-amber" },
   settled: { label: "已结算", tone: "text-text-mid" },
 };

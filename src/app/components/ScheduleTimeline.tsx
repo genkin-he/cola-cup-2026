@@ -6,6 +6,7 @@ import type { MatchStatus } from "../../lib/matchState";
 import type { Pick } from "../../lib/stage";
 import { StatusBadge } from "./StatusBadge";
 import { formatDecimal } from "../../lib/decimalOdds";
+import { LEAD_DIVERGENCE_PCT } from "../../lib/voteOdds";
 
 export type RowVM = {
   id: number;
@@ -18,6 +19,7 @@ export type RowVM = {
   groupKey: string | null;
   groupName: string | null;
   status: MatchStatus;
+  voted: boolean;
   home: { name: string; flag: string | null };
   away: { name: string; flag: string | null };
   settled: boolean;
@@ -42,17 +44,17 @@ type StatusFilter = "all" | "open" | "done";
 
 const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "全部" },
-  { value: "open", label: "仅可投票" },
+  { value: "open", label: "仅可预测" },
   { value: "done", label: "已结束" },
 ];
 
 const PICK_SHORT: Record<Pick, string> = { home: "主", draw: "平", away: "客" };
+const PICKS: Pick[] = ["home", "draw", "away"];
 const RESULT_LABEL: Record<Pick, string> = {
   home: "主胜",
   draw: "平局",
   away: "客胜",
 };
-const DIVERGENCE_HOT_THRESHOLD = 10;
 const DIVERGENCE_TIP =
   "市场（聪明钱）与同事看法分歧大 —— 用同事赔率下注可能赢更多可乐";
 
@@ -80,6 +82,7 @@ function dayHeading(
 }
 
 function MatchMeta({ row }: { row: RowVM }) {
+  const showVoted = row.status === "open" && row.voted;
   return (
     <div className="meta">
       <span className="time">{row.timeLabel}</span>
@@ -88,7 +91,11 @@ function MatchMeta({ row }: { row: RowVM }) {
         {row.stageLabel}
         {row.groupKey ? ` ${row.groupKey}` : ""}
       </span>
-      <StatusBadge status={row.status} className="meta-badge" />
+      {showVoted ? (
+        <span className="badge voted meta-badge">✓ 已预测</span>
+      ) : (
+        <StatusBadge status={row.status} className="meta-badge" />
+      )}
     </div>
   );
 }
@@ -138,6 +145,29 @@ function crowdPctFor(row: RowVM, pick: Pick): number | null {
       : row.crowd.awayPct;
 }
 
+function marketPctFor(row: RowVM, pick: Pick): number | null {
+  if (!row.market) return null;
+  return pick === "home"
+    ? row.market.home
+    : pick === "draw"
+      ? row.market.draw
+      : row.market.away;
+}
+
+function pickMaxDivergence(
+  row: RowVM,
+): { pick: Pick; diff: number } | null {
+  let best: { pick: Pick; diff: number } | null = null;
+  for (const pick of PICKS) {
+    const marketPct = marketPctFor(row, pick);
+    const crowdPct = crowdPctFor(row, pick);
+    if (marketPct == null || crowdPct == null || crowdPct <= 0) continue;
+    const diff = marketPct - crowdPct;
+    if (!best || Math.abs(diff) > Math.abs(best.diff)) best = { pick, diff };
+  }
+  return best;
+}
+
 function MatchBig({ row }: { row: RowVM }) {
   if (row.resultPick) {
     return (
@@ -150,37 +180,28 @@ function MatchBig({ row }: { row: RowVM }) {
 
   const marketLeader = row.market ? pickMarketLeader(row.market) : null;
   if (marketLeader) {
-    const crowdPct = crowdPctFor(row, marketLeader.pick);
-    const cDec = row.crowdOdds ? row.crowdOdds[marketLeader.pick] : null;
-    const diff =
-      crowdPct != null ? marketLeader.pct - crowdPct : null;
+    const maxDiv = pickMaxDivergence(row);
     let dv: React.ReactNode = null;
-    if (diff != null) {
-      const absDiff = Math.abs(diff);
-      if (absDiff >= DIVERGENCE_HOT_THRESHOLD) {
-        const lead = diff > 0 ? "市场更看好" : "同事更看好";
-        dv = (
-          <div className="dv hot">
-            <span
-              className="spark"
-              data-tip={DIVERGENCE_TIP}
-              tabIndex={0}
-              role="button"
-              aria-label="分歧说明"
-            >
-              ⚡
-            </span>
-            {lead} +{absDiff}
-          </div>
-        );
-      } else {
-        dv = (
-          <div className="dv aligned">
-            同事 {crowdPct}%
-            {cDec != null ? ` · ${formatDecimal(cDec)}x` : " · 看法接近"}
-          </div>
-        );
-      }
+    if (maxDiv && Math.abs(maxDiv.diff) >= LEAD_DIVERGENCE_PCT) {
+      const marketLeads = maxDiv.diff > 0;
+      const sameAsShown = maxDiv.pick === marketLeader.pick;
+      const lead =
+        (marketLeads ? "市场更看好" : "同事更看好") +
+        (sameAsShown ? "" : PICK_SHORT[maxDiv.pick]);
+      dv = (
+        <div className={"dv hot " + (marketLeads ? "mk" : "cr")}>
+          <span
+            className="spark"
+            data-tip={DIVERGENCE_TIP}
+            tabIndex={0}
+            role="button"
+            aria-label="分歧说明"
+          >
+            ⚡
+          </span>
+          {lead}
+        </div>
+      );
     }
     return (
       <div className="big">
@@ -213,22 +234,13 @@ function MatchBig({ row }: { row: RowVM }) {
 }
 
 function MatchRow({ row }: { row: RowVM }) {
-  const linkable = row.status !== "scheduled" && row.status !== "upcoming";
-  const inner = (
-    <>
+  return (
+    <Link href={`/match/${row.id}`} className="mrow">
       <MatchMeta row={row} />
       <MatchTeams row={row} />
       <MatchBig row={row} />
-    </>
+    </Link>
   );
-  if (linkable) {
-    return (
-      <Link href={`/match/${row.id}`} className="mrow">
-        {inner}
-      </Link>
-    );
-  }
-  return <div className="mrow no-link">{inner}</div>;
 }
 
 export function ScheduleTimeline({
@@ -298,7 +310,7 @@ export function ScheduleTimeline({
                 <span className="sm">{secondary}</span>
               </div>
               {dayRows.map((row, idx) => (
-                <div key={row.id}>
+                <div key={row.id} id={`m-${row.id}`} className="mrow-anchor">
                   {idx === 0 && <hr className="rule" />}
                   <MatchRow row={row} />
                   <hr className="rule" />

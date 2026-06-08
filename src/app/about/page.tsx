@@ -14,7 +14,7 @@ export default function AboutPage() {
           <b style={{ color: "var(--hi)" }}>
             CUP<span style={{ color: "var(--red)" }}>.</span>2026
           </b>{" "}
-          是同事之间的世界杯预测小游戏 —— 赛前投票看好谁，赛后按大家的投票赔率结算。
+          是同事之间的世界杯预测小游戏 —— 赛前预测看好谁，赛后按大家的预测赔率结算。
           <b style={{ color: "var(--hi)" }}>不涉及真钱</b>，输赢都用饮料：猜错的人给大家买几瓶，仅此而已。
         </p>
 
@@ -80,12 +80,12 @@ export default function AboutPage() {
           <ol className="rules">
             <li>
               <span className="t">
-                <b>赛前投票</b>，选主胜 / 平 / 客胜，并约定彩头瓶数。<small>开赛前可随时改预测。</small>
+                <b>赛前预测</b>，选主胜 / 平 / 客胜，并约定彩头瓶数。<small>开赛前可随时改预测。</small>
               </span>
             </li>
             <li>
               <span className="t">
-                <b>开赛前 1 小时锁定</b>，结算赔率以同事投票为准。<small>Polymarket 市场数据全程仅作对比参考。</small>
+                <b>开赛前 1 小时锁定</b>，结算赔率以同事预测为准。<small>Polymarket 市场数据全程仅作对比参考。</small>
               </span>
             </li>
             <li>
@@ -108,7 +108,7 @@ export default function AboutPage() {
 
         <div className="sec">
           <h2 className="disp">数据来源</h2>
-          <p className="sub">市场赔率来自 Polymarket，仅供对比；结算只看同事投票。</p>
+          <p className="sub">市场赔率来自 Polymarket，仅供对比；结算只看同事预测。</p>
           <div className="source">
             <a
               className="market-link"

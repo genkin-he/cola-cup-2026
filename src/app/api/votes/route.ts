@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   });
   if (!isVotable(status)) {
     return NextResponse.json(
-      { error: "该比赛当前无法投票（未开放、已截止或对阵未定）" },
+      { error: "该比赛当前无法预测（未开放、已截止或对阵未定）" },
       { status: 409 },
     );
   }

@@ -1,6 +1,9 @@
 import type { VoteTally } from "../db/queries/votes";
 
-const MIN_SAMPLE = 3;
+export const MIN_SAMPLE = 3;
+
+/** Min gap (percentage points) between market and crowd before surfacing a "更看好" lead. */
+export const LEAD_DIVERGENCE_PCT = 33;
 
 export type VoteOdds = {
   p_home: number;

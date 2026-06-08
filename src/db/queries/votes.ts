@@ -19,6 +19,13 @@ export function getUserVote(matchId: number, userId: number): Vote | null {
   );
 }
 
+export function getUserVotedMatchIds(userId: number): Set<number> {
+  const rows = db
+    .prepare("SELECT match_id FROM votes WHERE user_id = ?")
+    .all(userId) as { match_id: number }[];
+  return new Set(rows.map((r) => r.match_id));
+}
+
 export function upsertVote(
   matchId: number,
   userId: number,

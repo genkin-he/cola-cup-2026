@@ -359,7 +359,7 @@ function TodoRow({
           className="adm-toggle"
           onClick={() => setShowVotes((s) => !s)}
         >
-          {showVotes ? "隐藏投票" : `投票明细（${m.voteLines.length}）`}
+          {showVotes ? "隐藏预测" : `预测明细（${m.voteLines.length}）`}
         </button>
         {showVotes && (
           <VotesBreakdown
