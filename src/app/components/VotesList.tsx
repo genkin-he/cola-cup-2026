@@ -1,11 +1,11 @@
+import { Fragment } from "react";
 import type { VoteDetail } from "../../db/queries/votes";
-import { PICK_LABELS, type Pick } from "../../lib/stage";
-import { Avatar } from "./Avatar";
+import { type Pick } from "../../lib/stage";
 
-const PICK_TONE: Record<Pick, string> = {
-  home: "text-win",
-  draw: "text-draw",
-  away: "text-loss",
+const PICK_TAG_CLASS: Record<Pick, string> = {
+  home: "tag h",
+  draw: "tag d",
+  away: "tag a",
 };
 
 export function VotesList({
@@ -19,57 +19,44 @@ export function VotesList({
   result: Pick | null;
   settled: boolean;
 }) {
-  return (
-    <section className="rounded-card border border-border bg-bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-lg tracking-wide">谁押了什么</h2>
-        <span className="text-xs text-text-low">{votes.length} 人</span>
-      </div>
+  const showResult = settled && result != null;
 
+  return (
+    <div className="voters">
+      <hr className="rule" style={{ marginTop: 24 }} />
+      <h3 className="disp" style={{ paddingTop: 18 }}>
+        群众投票 · {votes.length} 人
+      </h3>
+      <hr className="rule" />
       {votes.length === 0 ? (
-        <p className="py-4 text-center text-sm text-text-low">
+        <p style={{ padding: "20px 0", color: "var(--low)", fontSize: 13 }}>
           还没有人投票，来当第一个 🥤
         </p>
       ) : (
-        <ul className="divide-y divide-border">
-          {votes.map((v) => {
-            const won = settled && result ? v.pick === result : null;
-            return (
-              <li
-                key={v.user_id}
-                className="flex items-center gap-3 py-2.5"
-              >
-                <Avatar
-                  avatarUrl={v.avatar_url}
-                  emoji={v.emoji}
-                  nickname={v.nickname}
-                  size="sm"
-                />
-
-                <span className="min-w-0 flex-1 truncate text-sm">
-                  {v.nickname}
+        votes.map((vote) => {
+          const won = showResult ? vote.pick === result : null;
+          return (
+            <Fragment key={vote.user_id}>
+              <div className="vrow">
+                <span className="em">{vote.emoji ?? "👤"}</span>
+                <span className="nm">{vote.nickname}</span>
+                <span className={PICK_TAG_CLASS[vote.pick]}>
+                  {teamLabel[vote.pick]}
                 </span>
-                <span className={`text-sm font-medium ${PICK_TONE[v.pick]}`}>
-                  {teamLabel[v.pick]}
-                  <span className="ml-1 text-xs text-text-low">
-                    {PICK_LABELS[v.pick]}
-                  </span>
-                </span>
-                <span className="w-14 text-right text-sm tabular text-text-mid">
-                  🥤 {v.stake}
+                <span className="pk">
+                  🥤 <b>{vote.stake}</b> 瓶
                 </span>
                 {won != null && (
-                  <span
-                    className={`w-8 text-right text-sm ${won ? "text-win" : "text-loss"}`}
-                  >
+                  <span className={won ? "res w" : "res l"}>
                     {won ? "✓" : "✗"}
                   </span>
                 )}
-              </li>
-            );
-          })}
-        </ul>
+              </div>
+              <hr className="rule" />
+            </Fragment>
+          );
+        })
       )}
-    </section>
+    </div>
   );
 }

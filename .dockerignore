@@ -1,7 +1,7 @@
 node_modules
-.next
 .git
 data
+.cf-assets
 *.log
 .env*.local
 README.md

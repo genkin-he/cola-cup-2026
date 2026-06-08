@@ -177,6 +177,61 @@ export function settleMatch(
   return run();
 }
 
+export type OkResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Mark a match's offline coke payout done (or undo it). Requires the match to be
+ * settled first (result + ledger exist); this only records the physical hand-off
+ * of bottles, not the betting outcome. Idempotent.
+ */
+export function markCokeSettled(
+  matchId: number,
+  settlerId: number,
+  done: boolean,
+): OkResult {
+  const match = db
+    .prepare("SELECT settled FROM matches WHERE id = ?")
+    .get(matchId) as { settled: number } | undefined;
+  if (!match) return { ok: false, error: "比赛不存在" };
+  if (!match.settled) {
+    return { ok: false, error: "尚未录入结果，无法标记可乐已结清" };
+  }
+  db.prepare(
+    `UPDATE matches
+       SET coke_settled = ?, coke_settled_at = ?, coke_settled_by = ?
+     WHERE id = ?`,
+  ).run(done ? 1 : 0, done ? Date.now() : null, done ? settlerId : null, matchId);
+  return { ok: true };
+}
+
+/** Settle everyone's coke at once: mark all result-entered matches as paid. */
+export function markAllCokeSettled(settlerId: number): { settled: number } {
+  const now = Date.now();
+  const info = db
+    .prepare(
+      `UPDATE matches SET coke_settled = 1, coke_settled_at = ?, coke_settled_by = ?
+       WHERE settled = 1 AND coke_settled = 0`,
+    )
+    .run(now, settlerId);
+  return { settled: info.changes };
+}
+
+/** Correct or fill a match's score without re-running settlement. */
+export function updateMatchScore(
+  matchId: number,
+  homeScore: number | null,
+  awayScore: number | null,
+): OkResult {
+  const match = db
+    .prepare("SELECT id FROM matches WHERE id = ?")
+    .get(matchId) as { id: number } | undefined;
+  if (!match) return { ok: false, error: "比赛不存在" };
+  db.prepare(
+    "UPDATE matches SET home_score = ?, away_score = ? WHERE id = ?",
+  ).run(homeScore, awayScore, matchId);
+  return { ok: true };
+}
+
 /** Lock snapshots once voting closes (1h before kickoff) (cron/manual). */
 export function lockDueMatches(now: number): number {
   const due = db

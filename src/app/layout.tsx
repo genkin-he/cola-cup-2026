@@ -1,21 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Inter, Spline_Sans_Mono, Pacifico } from "next/font/google";
+import {
+  Big_Shoulders,
+  Space_Grotesk,
+  Spline_Sans_Mono,
+  Pacifico,
+} from "next/font/google";
 import "./globals.css";
 import { Nav } from "./components/Nav";
 import { getCurrentUser } from "../lib/identity";
+import { isSettler } from "../lib/settler";
 
-const anton = Anton({
-  weight: "400",
+const bigShoulders = Big_Shoulders({
+  weight: ["500", "600", "700", "800", "900"],
   subsets: ["latin"],
-  variable: "--font-anton",
+  variable: "--font-big-shoulders",
   display: "swap",
 });
-const inter = Inter({
+const spaceGrotesk = Space_Grotesk({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 const splineMono = Spline_Sans_Mono({
+  weight: ["400", "500", "600"],
   subsets: ["latin"],
   variable: "--font-spline-mono",
   display: "swap",
@@ -28,14 +36,16 @@ const pacifico = Pacifico({
 });
 
 export const metadata: Metadata = {
-  title: "Cup · 2026 世界杯可乐竞猜",
-  description: "根据 Polymarket 赔率赌可口可乐 🥤",
+  title: "CUP · 2026 世界杯可乐竞猜",
+  description: "赛前投票预测，赛后按群众投票赔率结算。猜错了，按净瓶数给同事买饮料 🥤",
 };
 
 export const viewport: Viewport = {
   themeColor: "#0b0f0c",
   viewportFit: "cover",
 };
+
+const THEME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('cup-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default async function RootLayout({
   children,
@@ -46,8 +56,8 @@ export default async function RootLayout({
   const navUser = user
     ? {
         nickname: user.nickname,
-        avatarUrl: user.avatar_url,
         emoji: user.emoji,
+        isSettler: isSettler(user),
       }
     : null;
 
@@ -55,13 +65,14 @@ export default async function RootLayout({
     <html
       lang="zh"
       data-theme="dark"
-      className={`${anton.variable} ${inter.variable} ${splineMono.variable} ${pacifico.variable}`}
+      className={`${bigShoulders.variable} ${spaceGrotesk.variable} ${splineMono.variable} ${pacifico.variable}`}
     >
-      <body className="min-h-dvh bg-bg-base text-text-hi antialiased">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body>
         <Nav user={navUser} />
-        <main className="mx-auto w-full max-w-[800px] px-4 pt-4 pb-28 lg:pt-6 lg:pb-12">
-          {children}
-        </main>
+        <main className="shell">{children}</main>
       </body>
     </html>
   );

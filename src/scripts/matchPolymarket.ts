@@ -83,8 +83,8 @@ export function buildMatchIndex(): MatchIndex {
   return { nameToTeamId, pairToMatch };
 }
 
-/** Resolve a Polymarket team name to a team_id, exact alias first then token subset. */
-function resolveTeam(
+/** Resolve a team name to a team_id, exact alias first then token subset. */
+export function resolveTeam(
   polyName: string,
   index: MatchIndex,
 ): number | null {

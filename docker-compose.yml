@@ -2,14 +2,14 @@ services:
   app:
     build: .
     image: cup-worldcup
-    container_name: cup
+    container_name: cup2026-service
     restart: unless-stopped
     ports:
       - "8026:8026"
     environment:
       - PORT=8026
       - DB_PATH=/app/data/cup.db
-      - ADMIN_TOKEN=${ADMIN_TOKEN:-worldcup-admin-2026}
+      - SETTLER_USERNAMES=${SETTLER_USERNAMES:-}
       # Auth.js — set these in a .env file next to docker-compose.yml
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=true

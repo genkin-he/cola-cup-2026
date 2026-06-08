@@ -14,8 +14,14 @@ RUN apt-get update \
 COPY package.json package-lock.json* ./
 RUN npm ci
 
+# Source AND the pre-built .next/ from the host. We deliberately do NOT
+# run `npm run build` inside the image: the build that produced the hashed
+# /_next/static/* files on Cloudflare Pages must be the same build whose
+# HTML the server emits, or chunk hashes mismatch and assets 404.
+#
+# Workflow: run `make deploy` on the host (builds + uploads to Pages),
+# THEN `docker compose up -d --build` to ship that same .next/ into the image.
 COPY . .
-RUN npm run build
 
 ENV NODE_ENV=production
 ENV PORT=8026

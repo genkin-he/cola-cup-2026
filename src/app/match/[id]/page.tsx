@@ -90,65 +90,49 @@ export default async function MatchPage({
     crowdD: crowdD(key),
   }));
 
-  // Settlement runs on the crowd vote odds, so that's what the preview shows.
   const voteDecimal: Partial<Record<Pick, number | null>> = {};
   for (const key of picks) voteDecimal[key] = crowdD(key);
 
+  const middleVs =
+    match.settled && match.home_score != null && match.away_score != null
+      ? `${match.home_score}–${match.away_score}`
+      : "VS";
+
   return (
-    <div className="space-y-4">
-      <Link href="/" className="text-sm text-text-mid hover:text-text-hi">
+    <section>
+      <Link href="/" className="back">
         ← 返回赛程
       </Link>
+      <hr className="rule ink" />
 
-      <header className="relative overflow-hidden rounded-card border border-border bg-bg-pitch p-5">
-        <div className="flex items-center justify-between text-xs text-text-mid">
-          <span className="flex items-center gap-1.5">
-            <span className="rounded bg-bg-elevated px-1.5 py-0.5 font-semibold">
-              {stageLabel(match.stage)}
-            </span>
-            {match.group_name && <span>{match.group_name}</span>}
-          </span>
-          <StatusBadge status={status} />
-        </div>
+      <div className="detail-top">
+        <span>
+          {stageLabel(match.stage)}
+          {match.group_name ? ` · ${match.group_name}` : ""}
+        </span>
+        <StatusBadge status={status} />
+      </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3">
-          <div className="flex flex-1 flex-col items-center gap-1">
-            <span className="text-4xl">{match.home.flag ?? "🏳️"}</span>
-            <span className="text-center font-display text-lg tracking-wide">
-              {match.home.name}
-            </span>
-          </div>
-          <div className="flex flex-col items-center">
-            {match.settled && match.home_score != null ? (
-              <span className="font-display text-4xl tabular text-amber">
-                {match.home_score}–{match.away_score}
-              </span>
-            ) : (
-              <span className="font-display text-2xl text-text-low">VS</span>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col items-center gap-1">
-            <span className="text-4xl">{match.away.flag ?? "🏳️"}</span>
-            <span className="text-center font-display text-lg tracking-wide">
-              {match.away.name}
-            </span>
-          </div>
-        </div>
+      <div className="detail-vs">
+        <span className="team">
+          <span className="flag">{match.home.flag ?? "🏳️"}</span>
+          <span className="nm">{match.home.name}</span>
+        </span>
+        <span className="x">{middleVs}</span>
+        <span className="team">
+          <span className="flag">{match.away.flag ?? "🏳️"}</span>
+          <span className="nm">{match.away.name}</span>
+        </span>
+      </div>
 
-        <p className="mt-4 text-center text-sm text-text-mid">
-          {formatKickoff(match.kickoff_at)}
-          {match.venue && <span className="text-text-low"> · {match.venue}</span>}
-        </p>
-        {match.settled && match.result && (
-          <p className="mt-1 text-center text-sm text-amber">
-            结果：{teamLabel[match.result as Pick]}
-            {match.result !== "draw" ? "胜" : ""}
-          </p>
-        )}
-      </header>
+      <div className="detail-when">
+        {formatKickoff(match.kickoff_at)}
+        {match.venue && <span className="venue"> · {match.venue}</span>}
+      </div>
+      <hr className="rule" />
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-4">
+      <div className="detail-cols">
+        <div className="left">
           <OddsCompare
             outcomes={outcomes}
             crowdTotal={tally.voters}
@@ -163,22 +147,18 @@ export default async function MatchPage({
             settled={!!match.settled}
           />
         </div>
-        <VotePanel
-          matchId={match.id}
-          picks={picks.map((key) => ({ key, label: teamLabel[key] }))}
-          oddsDecimal={voteDecimal}
-          votable={isVotable(status)}
-          hasIdentity={!!user}
-          initialPick={(userVote?.pick as Pick) ?? null}
-          initialStake={userVote?.stake ?? null}
-        />
+        <div className="right">
+          <VotePanel
+            matchId={match.id}
+            picks={picks.map((key) => ({ key, label: teamLabel[key] }))}
+            oddsDecimal={voteDecimal}
+            votable={isVotable(status)}
+            hasIdentity={!!user}
+            initialPick={(userVote?.pick as Pick) ?? null}
+            initialStake={userVote?.stake ?? null}
+          />
+        </div>
       </div>
-
-      <p className="text-center text-xs text-text-low">
-        🥤 结算以<strong className="text-text-mid"> 群众投票赔率 </strong>为准（开赛前 1 小时锁定）·
-        Polymarket 仅作对比 ·
-        {withDraw ? " 小组赛 主/平/客" : " 淘汰赛 只投晋级方"}
-      </p>
-    </div>
+    </section>
   );
 }

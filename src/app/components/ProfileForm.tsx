@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Avatar } from "./Avatar";
 
 const EMOJI_CHOICES = [
   "🦁", "🐯", "🐼", "🦊", "🐸", "🐙", "🦅", "🐺",
@@ -24,6 +23,8 @@ export function ProfileForm({
   const [emoji, setEmoji] = useState<string | null>(initialEmoji);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  void avatarUrl;
 
   async function save() {
     setMsg(null);
@@ -47,68 +48,36 @@ export function ProfileForm({
   const dirty = nickname !== initialNickname || emoji !== initialEmoji;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Avatar
-          avatarUrl={avatarUrl}
-          emoji={emoji}
-          nickname={nickname || "你"}
-          size="lg"
-          ring="border-coke-red"
-        />
-        <span className="text-sm text-text-mid">头像预览</span>
+    <div className="id-form">
+      <div className="preview">
+        <span className="em">{emoji ?? "👤"}</span>
+        <span>
+          <div className="nm">{nickname || "你"}</div>
+          <div className="label">头像预览</div>
+        </span>
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-sm text-text-mid">昵称</label>
-        <input
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          maxLength={16}
-          className="w-full rounded-pill border border-border bg-bg-base px-4 py-2 text-text-hi outline-none transition focus:border-coke-red"
-        />
+      <label className="row" htmlFor="nick">昵称</label>
+      <input
+        id="nick"
+        type="text"
+        value={nickname}
+        onChange={(e) => setNickname(e.target.value)}
+        maxLength={16}
+        placeholder="给自己起个名字"
+      />
+
+      <label className="row" style={{ marginTop: 24 }}>选个头像 emoji</label>
+      <div className="emoji-grid">
+        {EMOJI_CHOICES.map((e) => (
+          <button key={e} type="button" className={emoji === e ? "sel" : ""} onClick={() => setEmoji(e === emoji ? null : e)}>{e}</button>
+        ))}
       </div>
 
-      <div>
-        <div className="mb-1.5 flex items-center justify-between">
-          <label className="text-sm text-text-mid">头像（可用 emoji 覆盖）</label>
-          {emoji && (
-            <button
-              type="button"
-              onClick={() => setEmoji(null)}
-              className="text-xs text-text-low transition hover:text-text-hi"
-            >
-              ↩︎ 用回 Twitter 头像
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-8 gap-1.5">
-          {EMOJI_CHOICES.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => setEmoji(e === emoji ? null : e)}
-              className={`flex aspect-square items-center justify-center rounded-lg text-xl transition ${
-                emoji === e
-                  ? "bg-coke-red/20 ring-2 ring-coke-red"
-                  : "bg-bg-elevated hover:bg-border"
-              }`}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
-      </div>
+      {msg && <p className={msg.startsWith("✅") ? "formmsg" : "formmsg formerror"}>{msg}</p>}
 
-      {msg && <p className="text-xs text-text-mid">{msg}</p>}
-
-      <button
-        type="button"
-        disabled={saving || !nickname.trim() || !dirty}
-        onClick={save}
-        className="w-full rounded-pill bg-coke-red px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-coke-red-700 disabled:opacity-40"
-      >
-        {saving ? "保存中…" : "保存"}
+      <button type="button" className="cta" disabled={saving || !nickname.trim() || !dirty} onClick={save} style={{marginTop: 24}}>
+        {saving ? "保存中…" : "🥤 保存"}
       </button>
     </div>
   );

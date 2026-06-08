@@ -1,22 +1,22 @@
 import { NextResponse } from "next/server";
 import { db } from "../../../../db/client";
-import { isAdminToken } from "../../../../lib/admin";
+import { getCurrentSettler } from "../../../../lib/settler";
 import { getMatch } from "../../../../db/queries/matches";
 import { priceToDecimal } from "../../../../lib/decimalOdds";
 import { allowsDraw } from "../../../../lib/stage";
 
 export async function POST(request: Request) {
+  const settler = await getCurrentSettler();
+  if (!settler) {
+    return NextResponse.json({ error: "无结算权限" }, { status: 403 });
+  }
+
   const body = (await request.json().catch(() => null)) as {
-    adminToken?: string;
     matchId?: number;
     pHome?: number;
     pDraw?: number;
     pAway?: number;
   } | null;
-
-  if (!isAdminToken(body?.adminToken)) {
-    return NextResponse.json({ error: "管理员口令错误" }, { status: 401 });
-  }
 
   const matchId = Number(body?.matchId);
   const match = Number.isFinite(matchId) ? getMatch(matchId) : null;

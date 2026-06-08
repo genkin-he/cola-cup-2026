@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   getAllMatches,
   getLatestPolymarketOdds,
@@ -56,11 +57,11 @@ export default function HomePage() {
               ["draw", withDraw ? tally.draw : -1],
               ["away", tally.away],
             ];
-            const [pick, value] = entries.reduce((a, b) =>
+            const [leadPick, value] = entries.reduce((a, b) =>
               b[1] > a[1] ? b : a,
             );
             return {
-              pick,
+              pick: leadPick,
               pctValue: Math.round((value / tally.stakeTotal) * 100),
             };
           })()
@@ -107,24 +108,23 @@ export default function HomePage() {
   });
 
   return (
-    <div className="space-y-5">
-      <header className="relative overflow-hidden rounded-card border border-border bg-bg-pitch px-5 py-6">
-        <div className="bubbles" aria-hidden>
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-        <p className="text-sm text-amber">2026 FIFA 世界杯 · 美加墨</p>
-        <h1 className="mt-1 font-display text-3xl tracking-wide sm:text-4xl">
-          按赔率，赌可口可乐 🥤
+    <section>
+      <div className="hero">
+        <div className="kick">2026 FIFA 世界杯 · 美加墨</div>
+        <h1 className="disp">
+          按赔率
+          <br />
+          <em>赢可乐</em> 🥤
         </h1>
-        <p className="mt-2 max-w-md text-sm text-text-mid">
-          赛前给球队投票下注，赛后按群众投票赔率结算。押错了，按净瓶数请大家喝可乐。
+        <p className="lead">
+          赛前投票预测，赛后按群众投票赔率结算。猜错了，按净瓶数给同事买饮料。市场数据取自
+          Polymarket，仅供对比。
+          <Link href="/about" className="inline-amber">
+            什么是「可乐」？
+          </Link>
         </p>
-      </header>
-
+      </div>
       <ScheduleTimeline rows={rows} todayKey={todayKey} />
-    </div>
+    </section>
   );
 }

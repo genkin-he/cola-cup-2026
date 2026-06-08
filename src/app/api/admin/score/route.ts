@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentSettler } from "../../../../lib/settler";
-import { settleMatch } from "../../../../lib/settlement";
-import type { Pick } from "../../../../lib/stage";
+import { updateMatchScore } from "../../../../lib/settlement";
 
 export async function POST(request: Request) {
   const settler = await getCurrentSettler();
@@ -11,14 +10,12 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as {
     matchId?: number;
-    result?: Pick;
-    homeScore?: number;
-    awayScore?: number;
+    homeScore?: number | null;
+    awayScore?: number | null;
   } | null;
 
   const matchId = Number(body?.matchId);
-  const result = body?.result;
-  if (!Number.isFinite(matchId) || !result) {
+  if (!Number.isFinite(matchId)) {
     return NextResponse.json({ error: "参数不完整" }, { status: 400 });
   }
 
@@ -31,9 +28,9 @@ export async function POST(request: Request) {
       ? null
       : Number(body.awayScore);
 
-  const outcome = settleMatch(matchId, result, homeScore, awayScore);
+  const outcome = updateMatchScore(matchId, homeScore, awayScore);
   if (!outcome.ok) {
     return NextResponse.json({ error: outcome.error }, { status: 409 });
   }
-  return NextResponse.json({ ok: true, settled: outcome.settled });
+  return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,4 @@
-import { formatDecimal } from "../../lib/decimalOdds";
-import type { Pick } from "../../lib/stage";
-import { PICK_LABELS } from "../../lib/stage";
+import { PICK_LABELS, type Pick } from "../../lib/stage";
 
 export type OutcomeOdds = {
   key: Pick;
@@ -11,34 +9,45 @@ export type OutcomeOdds = {
   crowdD: number | null;
 };
 
-function pct(p: number | null): string {
-  return p == null ? "—" : `${Math.round(p * 100)}%`;
+function clampWidth(p: number | null): number {
+  if (p == null) return 0;
+  const clamped = Math.max(0, Math.min(1, p));
+  return Math.round(clamped * 100);
 }
 
-function Bar({
-  p,
-  color,
-}: {
-  p: number | null;
-  color: "market" | "crowd";
-}) {
-  const width = p == null ? 0 : Math.round(p * 100);
-  const bg = color === "market" ? "bg-market" : "bg-crowd";
-  return (
-    <span className="block h-1.5 w-full overflow-hidden rounded-full bg-bg-elevated">
-      <span
-        className={`block h-full rounded-full ${bg} transition-[width] duration-500`}
-        style={{ width: `${width}%` }}
-      />
-    </span>
-  );
+function pctText(p: number | null): string {
+  return p == null ? "—" : `${Math.round(Math.max(0, Math.min(1, p)) * 100)}%`;
+}
+
+function findFeaturedIndex(outcomes: OutcomeOdds[]): number {
+  let bestIndex = -1;
+  let bestValue = -Infinity;
+  outcomes.forEach((o, i) => {
+    if (o.crowdP != null && o.crowdP > bestValue) {
+      bestValue = o.crowdP;
+      bestIndex = i;
+    }
+  });
+  return bestIndex;
+}
+
+function renderLead(crowdP: number | null, marketP: number | null) {
+  if (crowdP == null || marketP == null) return null;
+  const diff = Math.round((crowdP - marketP) * 100);
+  if (diff > 0) {
+    return <span className="o-lead fav">群众更看好 +{diff}</span>;
+  }
+  if (diff < 0) {
+    return <span className="o-lead dim">市场更看好 +{Math.abs(diff)}</span>;
+  }
+  return <span className="o-lead dim">持平</span>;
 }
 
 export function OddsCompare({
   outcomes,
   crowdTotal,
   lowSample,
-  locked,
+  locked: _locked,
   polymarketUrl,
 }: {
   outcomes: OutcomeOdds[];
@@ -47,103 +56,103 @@ export function OddsCompare({
   locked: boolean;
   polymarketUrl?: string | null;
 }) {
+  const featuredIndex = findFeaturedIndex(outcomes);
   const hasMarket = outcomes.some((o) => o.marketP != null);
+  const crowdLegend = crowdTotal > 0 ? `群众 · ${crowdTotal} 人` : "群众";
+
+  const footerParts: string[] = [];
+  if (lowSample && crowdTotal > 0) {
+    footerParts.push(" · 群众样本不足，赔率仅供参考。");
+  }
+  if (!hasMarket) {
+    footerParts.push(" · Polymarket 暂未对该场开盘。");
+  }
 
   return (
-    <section className="rounded-card border border-border bg-bg-surface p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-display text-lg tracking-wide">赔率对比</h2>
-        {locked && (
-          <span className="rounded-pill bg-amber/15 px-2 py-0.5 text-[11px] text-amber">
-            🔒 已锁定
-          </span>
-        )}
-      </div>
+    <div className="oc">
+      <h2 className="disp">赔率对比</h2>
+      <p className="oc-note">
+        每个结果都对比两个来源 —— <b className="cr">🥤 群众投票</b> 与{" "}
+        <b className="mk">⚽ Polymarket 市场</b>。
+        <b style={{ color: "var(--hi)" }}>结算只看群众投票</b>
+        ，市场仅作参考。
+      </p>
 
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-        <span className="flex items-center gap-1.5 text-market">
-          <span className="h-2.5 w-2.5 rounded-full bg-market" /> ⚽ Polymarket 市场
-        </span>
-        <span className="flex items-center gap-1.5 text-crowd">
-          <span className="h-2.5 w-2.5 rounded-full bg-crowd" /> 🥤 群众投票（结算依据）
-          {crowdTotal > 0 && (
-            <span className="text-text-low">· {crowdTotal} 人</span>
-          )}
-        </span>
+      <div className="bar-head">
+        <div className="legend">
+          <span className="lg">
+            <i className="cr" />
+            {crowdLegend}
+          </span>
+          <span className="lg">
+            <i className="mk" />
+            市场
+          </span>
+        </div>
         {polymarketUrl && (
           <a
+            className="market-link"
             href={polymarketUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto inline-flex items-center gap-1 rounded-pill border border-market/40 px-2 py-0.5 text-market transition hover:bg-market/10"
           >
-            在 Polymarket 打开 ↗
+            ⚽ Polymarket 市场数据 <span className="arrow">↗</span>
           </a>
         )}
       </div>
 
-      <div className="space-y-4">
-        {outcomes.map((o) => {
-          const diff =
-            o.crowdP != null && o.marketP != null
-              ? Math.round((o.crowdP - o.marketP) * 100)
-              : null;
-          return (
-            <div key={o.key} className="space-y-1.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium">
-                  {o.teamLabel}
-                  <span className="ml-1.5 text-xs text-text-low">
-                    {PICK_LABELS[o.key]}
-                  </span>
+      {outcomes.map((o, i) => {
+        const isFeatured = i === featuredIndex;
+        const pickLabel = PICK_LABELS[o.key];
+        const showSmall = o.key !== "draw";
+        return (
+          <div
+            key={o.key}
+            className={isFeatured ? "odds-out featured" : "odds-out"}
+          >
+            <div className="odds-head">
+              <span className="o-nm">
+                {o.teamLabel}
+                {showSmall && <small>{pickLabel}</small>}
+              </span>
+              {renderLead(o.crowdP, o.marketP)}
+            </div>
+            <div className="odds-bars">
+              <div className="ob">
+                <span className="ob-lbl cr">🥤 群众</span>
+                <span className="ob-track">
+                  <i
+                    className="cr"
+                    style={{ width: `${clampWidth(o.crowdP)}%` }}
+                  />
                 </span>
-                {diff != null && (
-                  <span
-                    className={`text-xs tabular ${
-                      diff > 0
-                        ? "text-up"
-                        : diff < 0
-                          ? "text-down"
-                          : "text-flat"
-                    }`}
-                  >
-                    {diff > 0 ? "▲+" : diff < 0 ? "▼" : ""}
-                    {diff !== 0 ? `${diff}%` : "持平"}
-                  </span>
-                )}
+                <span className="ob-pct cr">{pctText(o.crowdP)}</span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <span className="w-10 shrink-0 text-right text-xs tabular text-market">
-                  {pct(o.marketP)}
+              <div className="ob">
+                <span className="ob-lbl mk">⚽ 市场</span>
+                <span className="ob-track">
+                  <i
+                    className="mk"
+                    style={{ width: `${clampWidth(o.marketP)}%` }}
+                  />
                 </span>
-                <Bar p={o.marketP} color="market" />
-                <span className="w-12 shrink-0 text-right text-xs tabular text-text-mid">
-                  {formatDecimal(o.marketD)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-10 shrink-0 text-right text-xs tabular text-crowd">
-                  {pct(o.crowdP)}
-                </span>
-                <Bar p={o.crowdP} color="crowd" />
-                <span className="w-12 shrink-0 text-right text-xs tabular text-text-mid">
-                  {formatDecimal(o.crowdD)}
-                </span>
+                <span className="ob-pct mk">{pctText(o.marketP)}</span>
               </div>
             </div>
-          );
-        })}
-      </div>
+          </div>
+        );
+      })}
 
-      {!hasMarket && (
-        <p className="mt-3 text-xs text-text-low">
-          Polymarket 暂未对该场开盘（不影响结算，结算以群众投票赔率为准）。
-        </p>
-      )}
-      {lowSample && crowdTotal > 0 && (
-        <p className="mt-3 text-xs text-text-low">群众样本不足，赔率仅供参考。</p>
-      )}
-    </section>
+      <p className="oc-foot">
+        🥤 结算以 <b>群众投票赔率</b> 为准（开赛前 1 小时锁定）· Polymarket
+        仅作对比。
+        {polymarketUrl && (
+          <a href={polymarketUrl} target="_blank" rel="noopener noreferrer">
+            前往市场数据 ↗
+          </a>
+        )}
+        {footerParts.join("")}
+      </p>
+    </div>
   );
 }
