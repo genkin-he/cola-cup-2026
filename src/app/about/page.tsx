@@ -53,6 +53,21 @@ export default function AboutPage() {
               <div className="note">1 : 1 等价</div>
             </div>
             <div className="drink">
+              <div className="em">🧋</div>
+              <div className="dn">冰红茶</div>
+              <div className="note">1 : 1 等价</div>
+            </div>
+            <div className="drink">
+              <div className="em">🍵</div>
+              <div className="dn">绿茶</div>
+              <div className="note">1 : 1 等价</div>
+            </div>
+            <div className="drink">
+              <div className="em">🫧</div>
+              <div className="dn">苏打水</div>
+              <div className="note">1 : 1 等价</div>
+            </div>
+            <div className="drink">
               <div className="em">🍺</div>
               <div className="dn">啤酒</div>
               <div className="note">1 : 1 · 仅限下班后</div>

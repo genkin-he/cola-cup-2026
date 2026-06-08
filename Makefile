@@ -10,7 +10,7 @@ ASSET_PROJECT ?= cup-assets
 ASSET_PREFIX  ?= https://cup-assets.pages.dev
 STAGE         := .cf-assets
 
-.PHONY: build deploy stage-assets cdn start dev clean
+.PHONY: build deploy stage-assets publish start dev clean
 
 # Production build (minifies JS/CSS; embeds ASSET_PREFIX into asset URLs).
 build:
@@ -19,11 +19,11 @@ build:
 # Build + publish static assets to Cloudflare Pages. Run after every code change.
 deploy: build stage-assets
 	npx wrangler pages deploy $(STAGE) --project-name $(ASSET_PROJECT)
-	@echo "✅ assets live on $(ASSET_PREFIX) — now reload the app:  make cdn  (or  make start)"
+	@echo "✅ assets live on $(ASSET_PREFIX) — now reload the app:  make publish  (or  make start)"
 
 # One-shot: build & publish to Pages CDN, then rebuild & restart the docker
 # container using the SAME .next/ that was pushed to Pages (so chunk hashes match).
-cdn: deploy
+publish: deploy
 	docker compose up -d --build
 	@echo "✅ container restarted with matching build → http://localhost:8026"
 

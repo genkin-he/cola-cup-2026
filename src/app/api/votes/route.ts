@@ -4,8 +4,7 @@ import { getMatch } from "../../../db/queries/matches";
 import { upsertVote, getUserVote } from "../../../db/queries/votes";
 import { deriveStatus, isVotable } from "../../../lib/matchState";
 import { validPicks, type Pick } from "../../../lib/stage";
-
-const ALLOWED_STAKES = new Set([1, 2, 3]);
+import { MIN_STAKE, MAX_STAKE, isValidStake } from "../../../lib/betting";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -35,9 +34,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!ALLOWED_STAKES.has(stake)) {
+  if (!isValidStake(stake)) {
     return NextResponse.json(
-      { error: "下注瓶数只能是 1 / 2 / 3" },
+      { error: `下注瓶数需为 ${MIN_STAKE}–${MAX_STAKE} 的整数` },
       { status: 400 },
     );
   }

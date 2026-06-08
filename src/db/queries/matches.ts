@@ -29,7 +29,6 @@ export type MatchRow = {
   home_score: number | null;
   away_score: number | null;
   settled: number;
-  coke_settled: number;
   home: TeamRef;
   away: TeamRef;
 };
@@ -44,7 +43,6 @@ type RawMatchRow = {
   home_score: number | null;
   away_score: number | null;
   settled: number;
-  coke_settled: number;
   home_team_id: number | null;
   away_team_id: number | null;
   home_label: string | null;
@@ -59,7 +57,7 @@ type RawMatchRow = {
 
 const MATCH_SELECT = `
   SELECT m.id, m.stage, m.group_name, m.venue, m.kickoff_at,
-         m.result, m.home_score, m.away_score, m.settled, m.coke_settled,
+         m.result, m.home_score, m.away_score, m.settled,
          m.home_team_id, m.away_team_id, m.home_label, m.away_label,
          COALESCE(ht.name_zh, ht.name) AS home_name, ht.flag AS home_flag, ht.code AS home_code,
          COALESCE(at.name_zh, at.name) AS away_name, at.flag AS away_flag, at.code AS away_code
@@ -79,7 +77,6 @@ function shape(row: RawMatchRow): MatchRow {
     home_score: row.home_score,
     away_score: row.away_score,
     settled: row.settled,
-    coke_settled: row.coke_settled,
     home: {
       id: row.home_team_id,
       name: row.home_name ?? row.home_label ?? "待定",

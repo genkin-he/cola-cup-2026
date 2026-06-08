@@ -6,6 +6,7 @@ import {
 import { getAllTallies } from "../db/queries/votes";
 import { deriveStatus } from "../lib/matchState";
 import { stageLabel, allowsDraw, type Pick } from "../lib/stage";
+import { computeVoteOdds } from "../lib/voteOdds";
 import {
   dateKey,
   formatDayLabel,
@@ -48,6 +49,7 @@ export default function HomePage() {
     });
     const groupLetter = match.group_name?.match(GROUP_RE)?.[1] ?? null;
     const withDraw = allowsDraw(match.stage);
+    const voteOdds = computeVoteOdds(tally, withDraw);
 
     const crowdLeader: { pick: Pick; pctValue: number } | null =
       tally.stakeTotal > 0
@@ -99,6 +101,9 @@ export default function HomePage() {
         leaderPick: crowdLeader?.pick ?? null,
         leaderPct: crowdLeader?.pctValue ?? null,
       },
+      crowdOdds: voteOdds
+        ? { home: voteOdds.d_home, draw: voteOdds.d_draw, away: voteOdds.d_away }
+        : null,
       countdown:
         status === "open" || status === "scheduled" || status === "upcoming"
           ? formatCountdown(match.kickoff_at, now)

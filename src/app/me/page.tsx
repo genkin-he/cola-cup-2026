@@ -1,10 +1,5 @@
-import {
-  getUserLedger,
-  getUserNet,
-  getUserCokeBreakdown,
-} from "../../db/queries/ledger";
+import { getUserLedger, getUserNet } from "../../db/queries/ledger";
 import { getCurrentUser } from "../../lib/identity";
-import { bottlesToBuy, bottlesToReceive } from "../../lib/decimalOdds";
 import { formatBottles } from "../../lib/format";
 import { PICK_LABELS, stageLabel, type Pick } from "../../lib/stage";
 
@@ -39,28 +34,9 @@ export default async function MePage() {
 
   const ledger = getUserLedger(user.id);
   const netRaw = getUserNet(user.id);
-  const { pending_net } = getUserCokeBreakdown(user.id);
-  const owe = bottlesToBuy(pending_net);
-  const recv = bottlesToReceive(pending_net);
-
   const wins = ledger.filter((l) => l.won).length;
   const hugeClass =
     netRaw > 0 ? "huge" : netRaw < 0 ? "huge neg" : "huge zero";
-
-  let verdictClass = "verdict";
-  let verdictText = "";
-  if (recv > 0) {
-    verdictText = `可收 ${recv} 瓶可乐 · 差额进可乐池`;
-  } else if (owe > 0) {
-    verdictClass = "verdict neg";
-    verdictText = `该买 ${owe} 瓶可乐 🥤 · 差额进可乐池`;
-  } else if (ledger.length > 0) {
-    verdictClass = "verdict zero";
-    verdictText = "已结清";
-  } else {
-    verdictClass = "verdict zero";
-    verdictText = "还没有投票记录";
-  }
 
   return (
     <section>
@@ -81,10 +57,7 @@ export default async function MePage() {
           {formatBottles(netRaw)}
           <small> 瓶</small>
         </div>
-        <div className={verdictClass}>{verdictText}</div>
-        <p className="note">
-          输家应买向上取整、赢家应收向下取整，差额进平台可乐池。结算以同事投票赔率为准。
-        </p>
+        <p className="note">按同事投票赔率结算，每场比赛的输赢见下。</p>
       </div>
 
       <div className="ledh disp">结算明细</div>

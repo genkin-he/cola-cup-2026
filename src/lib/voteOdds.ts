@@ -1,5 +1,4 @@
 import type { VoteTally } from "../db/queries/votes";
-import { priceToDecimal } from "./decimalOdds";
 
 const MIN_SAMPLE = 3;
 
@@ -7,18 +6,22 @@ export type VoteOdds = {
   p_home: number;
   p_draw: number | null;
   p_away: number;
-  d_home: number;
+  d_home: number | null;
   d_draw: number | null;
-  d_away: number;
+  d_away: number | null;
   total: number;
   lowSample: boolean;
 };
 
 /**
- * Stake-weighted crowd implied probability: each outcome's share of total
- * bottles wagered (betting more on an outcome lowers its odds, diluting your
- * own multiplier). Laplace-smoothed by 1 bottle so a zero-stake outcome still
- * yields a finite decimal. This is the settlement basis.
+ * Pari-mutuel pool odds from the crowd's stakes. An outcome's implied
+ * probability is its share of all bottles wagered; its decimal odds are the
+ * whole pool divided by that outcome's stake — i.e. what each backing bottle
+ * returns if it wins. An outcome with no stake has no defined odds (null).
+ *
+ * This mirrors settlement exactly: losers forfeit their stake into the pool and
+ * winners split it in proportion to stake, so payouts can never exceed the pool
+ * (the house never subsidises).
  */
 export function computeVoteOdds(
   tally: VoteTally,
@@ -26,19 +29,17 @@ export function computeVoteOdds(
 ): VoteOdds | null {
   if (tally.stakeTotal === 0) return null;
 
-  const outcomes = allowsDraw ? 3 : 2;
-  const smoothedTotal = tally.stakeTotal + outcomes;
-  const pHome = (tally.home + 1) / smoothedTotal;
-  const pAway = (tally.away + 1) / smoothedTotal;
-  const pDraw = allowsDraw ? (tally.draw + 1) / smoothedTotal : null;
+  const share = (stake: number) => stake / tally.stakeTotal;
+  const decimal = (stake: number) =>
+    stake > 0 ? tally.stakeTotal / stake : null;
 
   return {
-    p_home: pHome,
-    p_draw: pDraw,
-    p_away: pAway,
-    d_home: priceToDecimal(pHome),
-    d_draw: pDraw == null ? null : priceToDecimal(pDraw),
-    d_away: priceToDecimal(pAway),
+    p_home: share(tally.home),
+    p_draw: allowsDraw ? share(tally.draw) : null,
+    p_away: share(tally.away),
+    d_home: decimal(tally.home),
+    d_draw: allowsDraw ? decimal(tally.draw) : null,
+    d_away: decimal(tally.away),
     total: tally.voters,
     lowSample: tally.voters < MIN_SAMPLE,
   };

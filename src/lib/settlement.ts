@@ -2,15 +2,9 @@ import { db } from "../db/client";
 import type { OddsRow } from "../db/queries/matches";
 import { getVoteTally } from "../db/queries/votes";
 import { computeVoteOdds } from "./voteOdds";
-import { allowsDraw, validPicks, type Pick } from "./stage";
+import { bottlesToBuy, bottlesToReceive, platformPool } from "./decimalOdds";
+import { allowsDraw, isKnockout, type Pick } from "./stage";
 import { VOTE_CLOSES_MS_BEFORE } from "./matchState";
-
-type MatchCore = {
-  id: number;
-  stage: string;
-  settled: number;
-  kickoff_at: number;
-};
 
 function getLockedOdds(matchId: number, sources: string[]): OddsRow | null {
   const placeholders = sources.map(() => "?").join(",");
@@ -101,122 +95,293 @@ export function ensureLocked(matchId: number, now: number): OddsRow | null {
   return vote;
 }
 
-export type SettleResult =
-  | { ok: true; settled: number }
-  | { ok: false; error: string };
-
-function decimalFor(odds: OddsRow, pick: Pick): number | null {
-  return pick === "home" ? odds.d_home : pick === "draw" ? odds.d_draw : odds.d_away;
-}
-
-/**
- * Settle a match: write each voter's raw (un-rounded) delta into the ledger
- * using the locked VOTE odds, and mark the match settled. Atomic + idempotent.
- */
-export function settleMatch(
-  matchId: number,
-  result: Pick,
-  homeScore: number | null,
-  awayScore: number | null,
-): SettleResult {
-  const match = db
-    .prepare("SELECT id, stage, settled, kickoff_at FROM matches WHERE id = ?")
-    .get(matchId) as MatchCore | undefined;
-  if (!match) return { ok: false, error: "比赛不存在" };
-  if (match.settled) return { ok: false, error: "该比赛已结算" };
-  if (!validPicks(match.stage).includes(result)) {
-    return { ok: false, error: "结果与赛段不符（淘汰赛无平局）" };
-  }
-
-  const now = Date.now();
-  const run = db.transaction((): SettleResult => {
-    const voteOdds = ensureLocked(matchId, now);
-
-    const votes = db
-      .prepare("SELECT user_id, pick, stake FROM votes WHERE match_id = ?")
-      .all(matchId) as { user_id: number; pick: Pick; stake: number }[];
-
-    if (votes.length > 0 && !voteOdds) {
-      return { ok: false, error: "缺少投票赔率，无法结算" };
-    }
-
-    const insertLedger = db.prepare(
-      `INSERT INTO ledger
-         (match_id, user_id, pick, stake, d_used, won, delta, created_at)
-       VALUES (@matchId, @userId, @pick, @stake, @dUsed, @won, @delta, @now)
-       ON CONFLICT(match_id, user_id) DO NOTHING`,
-    );
-
-    let count = 0;
-    for (const vote of votes) {
-      const dUsed = (voteOdds && decimalFor(voteOdds, vote.pick)) || 1;
-      const won = vote.pick === result ? 1 : 0;
-      const delta = won ? vote.stake * (dUsed - 1) : -vote.stake;
-      insertLedger.run({
-        matchId,
-        userId: vote.user_id,
-        pick: vote.pick,
-        stake: vote.stake,
-        dUsed,
-        won,
-        delta,
-        now,
-      });
-      count += 1;
-    }
-
-    db.prepare(
-      `UPDATE matches
-       SET result = ?, home_score = ?, away_score = ?, result_at = ?, settled = 1
-       WHERE id = ?`,
-    ).run(result, homeScore, awayScore, now, matchId);
-
-    return { ok: true, settled: count };
-  });
-
-  return run();
-}
-
 export type OkResult = { ok: true } | { ok: false; error: string };
 
+/** Result implied by the score. Null when undecidable (no score, or a knockout
+ *  draw — where the advancing side must be picked explicitly). */
+export function deriveResultFromScore(
+  stage: string,
+  homeScore: number | null,
+  awayScore: number | null,
+): Pick | null {
+  if (homeScore == null || awayScore == null) return null;
+  if (homeScore > awayScore) return "home";
+  if (homeScore < awayScore) return "away";
+  return isKnockout(stage) ? null : "draw";
+}
+
 /**
- * Mark a match's offline coke payout done (or undo it). Requires the match to be
- * settled first (result + ledger exist); this only records the physical hand-off
- * of bottles, not the betting outcome. Idempotent.
+ * Record a match's score + result without settling (no ledger, settled stays 0).
+ * Used by the results sync (passes the explicit winner, covering ET/penalties)
+ * and by admin score edits on un-settled matches (result derived from score).
  */
-export function markCokeSettled(
+export function recordResult(
   matchId: number,
-  settlerId: number,
-  done: boolean,
+  homeScore: number | null,
+  awayScore: number | null,
+  result?: Pick,
 ): OkResult {
   const match = db
-    .prepare("SELECT settled FROM matches WHERE id = ?")
-    .get(matchId) as { settled: number } | undefined;
+    .prepare("SELECT stage, settled FROM matches WHERE id = ?")
+    .get(matchId) as { stage: string; settled: number } | undefined;
   if (!match) return { ok: false, error: "比赛不存在" };
-  if (!match.settled) {
-    return { ok: false, error: "尚未录入结果，无法标记可乐已结清" };
+  if (match.settled) return { ok: false, error: "该比赛已结算，请用修改比分" };
+
+  const resolved = result ?? deriveResultFromScore(match.stage, homeScore, awayScore);
+  if (!resolved) {
+    return {
+      ok: false,
+      error: isKnockout(match.stage)
+        ? "淘汰赛比分相同，请选择晋级方"
+        : "请填写比分",
+    };
   }
+
   db.prepare(
     `UPDATE matches
-       SET coke_settled = ?, coke_settled_at = ?, coke_settled_by = ?
+       SET result = ?, home_score = ?, away_score = ?, result_at = ?
      WHERE id = ?`,
-  ).run(done ? 1 : 0, done ? Date.now() : null, done ? settlerId : null, matchId);
+  ).run(resolved, homeScore, awayScore, Date.now(), matchId);
   return { ok: true };
 }
 
-/** Settle everyone's coke at once: mark all result-entered matches as paid. */
-export function markAllCokeSettled(settlerId: number): { settled: number } {
-  const now = Date.now();
-  const info = db
-    .prepare(
-      `UPDATE matches SET coke_settled = 1, coke_settled_at = ?, coke_settled_by = ?
-       WHERE settled = 1 AND coke_settled = 0`,
-    )
-    .run(now, settlerId);
-  return { settled: info.changes };
+type VoteRow = { user_id: number; pick: Pick; stake: number };
+
+type VoteDelta = VoteRow & { d_used: number; won: number; delta: number };
+
+function getMatchVotes(matchId: number): VoteRow[] {
+  return db
+    .prepare("SELECT user_id, pick, stake FROM votes WHERE match_id = ?")
+    .all(matchId) as VoteRow[];
 }
 
-/** Correct or fill a match's score without re-running settlement. */
+/**
+ * Pari-mutuel payout (pure, no writes): each loser forfeits exactly their stake
+ * into the pool; the winners split that pool in proportion to their stake. The
+ * batch is zero-sum, so total winnings can never exceed the pool — the house
+ * never subsidises (it only keeps the floored remainder). d_used is the implied
+ * pool decimal for the bettor's own pick (total pool ÷ that pick's stake).
+ */
+function deltasFromVotes(votes: VoteRow[], result: Pick): VoteDelta[] {
+  const total = votes.reduce((sum, v) => sum + v.stake, 0);
+  const winStake = votes
+    .filter((v) => v.pick === result)
+    .reduce((sum, v) => sum + v.stake, 0);
+  const loseStake = total - winStake;
+  const pickStake: Partial<Record<Pick, number>> = {};
+  for (const v of votes) pickStake[v.pick] = (pickStake[v.pick] ?? 0) + v.stake;
+
+  return votes.map((v) => {
+    const won = v.pick === result ? 1 : 0;
+    const delta = won
+      ? winStake > 0
+        ? (v.stake / winStake) * loseStake
+        : 0
+      : -v.stake;
+    const ownStake = pickStake[v.pick] ?? v.stake;
+    const d_used = ownStake > 0 ? total / ownStake : 1;
+    return { ...v, d_used, won, delta };
+  });
+}
+
+type SettleableMatch = {
+  id: number;
+  stage: string;
+  settled: number;
+  result: Pick | null;
+  home_score: number | null;
+  away_score: number | null;
+};
+
+function getSettleableMatch(matchId: number): SettleableMatch | undefined {
+  return db
+    .prepare(
+      "SELECT id, stage, settled, result, home_score, away_score FROM matches WHERE id = ?",
+    )
+    .get(matchId) as SettleableMatch | undefined;
+}
+
+function validateForSettle(
+  m: SettleableMatch | undefined,
+): { ok: true } | { ok: false; reason: string } {
+  if (!m) return { ok: false, reason: "比赛不存在" };
+  if (m.settled) return { ok: false, reason: "已结算" };
+  if (!m.result) return { ok: false, reason: "尚未录入赛果" };
+  return { ok: true };
+}
+
+export type PreviewMatch = {
+  matchId: number;
+  result: Pick;
+  homeScore: number | null;
+  awayScore: number | null;
+  voters: number;
+};
+
+export type PreviewUser = {
+  userId: number;
+  nickname: string;
+  emoji: string | null;
+  net: number;
+  owe: number;
+  recv: number;
+};
+
+export type SettlementPreview = {
+  ok: boolean;
+  error?: string;
+  matches: PreviewMatch[];
+  skipped: { matchId: number; reason: string }[];
+  users: PreviewUser[];
+  platformBottles: number;
+};
+
+/** Dry-run a batch settlement: compute each person's net buy/receive for the
+ *  selected matches without writing anything. */
+export function previewSettlement(matchIds: number[]): SettlementPreview {
+  const matches: PreviewMatch[] = [];
+  const skipped: { matchId: number; reason: string }[] = [];
+  const netByUser = new Map<number, number>();
+
+  for (const matchId of matchIds) {
+    const m = getSettleableMatch(matchId);
+    const check = validateForSettle(m);
+    if (!check.ok) {
+      skipped.push({ matchId, reason: check.reason });
+      continue;
+    }
+    const match = m!;
+    const votes = getMatchVotes(matchId);
+    for (const d of deltasFromVotes(votes, match.result as Pick)) {
+      netByUser.set(d.user_id, (netByUser.get(d.user_id) ?? 0) + d.delta);
+    }
+    matches.push({
+      matchId,
+      result: match.result as Pick,
+      homeScore: match.home_score,
+      awayScore: match.away_score,
+      voters: votes.length,
+    });
+  }
+
+  const users = buildPreviewUsers(netByUser);
+  const platformBottles = platformPool([...netByUser.values()]);
+  return {
+    ok: matches.length > 0,
+    error: matches.length > 0 ? undefined : skipped[0]?.reason ?? "没有可结算的比赛",
+    matches,
+    skipped,
+    users,
+    platformBottles,
+  };
+}
+
+function buildPreviewUsers(netByUser: Map<number, number>): PreviewUser[] {
+  const ids = [...netByUser.keys()];
+  if (ids.length === 0) return [];
+  const rows = db
+    .prepare(
+      `SELECT id, nickname, emoji FROM users WHERE id IN (${ids.map(() => "?").join(",")})`,
+    )
+    .all(...ids) as { id: number; nickname: string; emoji: string | null }[];
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids
+    .map((id) => {
+      const net = netByUser.get(id) ?? 0;
+      const u = byId.get(id);
+      return {
+        userId: id,
+        nickname: u?.nickname ?? "?",
+        emoji: u?.emoji ?? null,
+        net,
+        owe: bottlesToBuy(net),
+        recv: bottlesToReceive(net),
+      };
+    })
+    .sort((a, b) => b.net - a.net);
+}
+
+export type SettleSelectedResult =
+  | { ok: true; settlementId: number; settled: number; skipped: { matchId: number; reason: string }[] }
+  | { ok: false; error: string };
+
+/**
+ * Commit a batch settlement: create one settlement record, write each voter's
+ * pari-mutuel delta into the ledger, and mark the matches settled & linked to
+ * the record. Atomic; rolls back if nothing settles.
+ */
+export function settleSelected(
+  matchIds: number[],
+  settlerId: number,
+): SettleSelectedResult {
+  const now = Date.now();
+
+  const insertLedger = db.prepare(
+    `INSERT INTO ledger
+       (match_id, user_id, pick, stake, d_used, won, delta, created_at)
+     VALUES (@matchId, @userId, @pick, @stake, @dUsed, @won, @delta, @now)
+     ON CONFLICT(match_id, user_id) DO NOTHING`,
+  );
+
+  const run = db.transaction((): SettleSelectedResult => {
+    const settlementId = Number(
+      db
+        .prepare(
+          "INSERT INTO settlements (created_at, created_by, match_count) VALUES (?, ?, 0)",
+        )
+        .run(now, settlerId).lastInsertRowid,
+    );
+
+    const skipped: { matchId: number; reason: string }[] = [];
+    let settled = 0;
+
+    for (const matchId of matchIds) {
+      const m = getSettleableMatch(matchId);
+      const check = validateForSettle(m);
+      if (!check.ok) {
+        skipped.push({ matchId, reason: check.reason });
+        continue;
+      }
+      const result = m!.result as Pick;
+      ensureLocked(matchId, now); // freeze display snapshots (crowd + market)
+      const votes = getMatchVotes(matchId);
+      for (const d of deltasFromVotes(votes, result)) {
+        insertLedger.run({
+          matchId,
+          userId: d.user_id,
+          pick: d.pick,
+          stake: d.stake,
+          dUsed: d.d_used,
+          won: d.won,
+          delta: d.delta,
+          now,
+        });
+      }
+      db.prepare("UPDATE matches SET settled = 1, settlement_id = ? WHERE id = ?").run(
+        settlementId,
+        matchId,
+      );
+      settled += 1;
+    }
+
+    if (settled === 0) {
+      throw new Error(skipped[0]?.reason ?? "没有可结算的比赛");
+    }
+    db.prepare("UPDATE settlements SET match_count = ? WHERE id = ?").run(
+      settled,
+      settlementId,
+    );
+    return { ok: true, settlementId, settled, skipped };
+  });
+
+  try {
+    return run();
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
+
+/** Correct or fill a settled match's display score without re-running settlement. */
 export function updateMatchScore(
   matchId: number,
   homeScore: number | null,

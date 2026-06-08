@@ -139,12 +139,6 @@ export default async function MatchPage({
             locked={!!locked}
             polymarketUrl={polymarketUrl}
           />
-          <VotesList
-            votes={votes}
-            teamLabel={teamLabel}
-            result={(match.result as Pick) ?? null}
-            settled={!!match.settled}
-          />
         </div>
         <div className="right">
           <VotePanel
@@ -155,6 +149,12 @@ export default async function MatchPage({
             hasIdentity={!!user}
             initialPick={(userVote?.pick as Pick) ?? null}
             initialStake={userVote?.stake ?? null}
+          />
+          <VotesList
+            votes={votes}
+            teamLabel={teamLabel}
+            result={(match.result as Pick) ?? null}
+            settled={!!match.settled}
           />
         </div>
       </div>

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { MatchStatus } from "../../lib/matchState";
 import type { Pick } from "../../lib/stage";
 import { StatusBadge } from "./StatusBadge";
+import { formatDecimal } from "../../lib/decimalOdds";
 
 export type RowVM = {
   id: number;
@@ -32,6 +33,7 @@ export type RowVM = {
     leaderPick: Pick | null;
     leaderPct: number | null;
   };
+  crowdOdds: { home: number | null; draw: number | null; away: number | null } | null;
   countdown: string;
   isLive: boolean;
 };
@@ -93,7 +95,7 @@ function MatchMeta({ row }: { row: RowVM }) {
 
 function MatchTeams({ row }: { row: RowVM }) {
   const middle =
-    row.settled && row.homeScore != null && row.awayScore != null
+    row.homeScore != null && row.awayScore != null
       ? `${row.homeScore}–${row.awayScore}`
       : "VS";
   return (
@@ -137,11 +139,11 @@ function crowdPctFor(row: RowVM, pick: Pick): number | null {
 }
 
 function MatchBig({ row }: { row: RowVM }) {
-  if (row.settled && row.resultPick) {
+  if (row.resultPick) {
     return (
       <div className="big">
         <div className="pct score">{RESULT_LABEL[row.resultPick]}</div>
-        <div className="cap">已结算</div>
+        <div className="cap">{row.settled ? "已结算" : "待结算"}</div>
       </div>
     );
   }
@@ -149,6 +151,7 @@ function MatchBig({ row }: { row: RowVM }) {
   const marketLeader = row.market ? pickMarketLeader(row.market) : null;
   if (marketLeader) {
     const crowdPct = crowdPctFor(row, marketLeader.pick);
+    const cDec = row.crowdOdds ? row.crowdOdds[marketLeader.pick] : null;
     const diff =
       crowdPct != null ? marketLeader.pct - crowdPct : null;
     let dv: React.ReactNode = null;
@@ -171,7 +174,12 @@ function MatchBig({ row }: { row: RowVM }) {
           </div>
         );
       } else {
-        dv = <div className="dv aligned">同事 {crowdPct}% · 看法接近</div>;
+        dv = (
+          <div className="dv aligned">
+            同事 {crowdPct}%
+            {cDec != null ? ` · ${formatDecimal(cDec)}x` : " · 看法接近"}
+          </div>
+        );
       }
     }
     return (
@@ -185,11 +193,14 @@ function MatchBig({ row }: { row: RowVM }) {
 
   if (row.crowd.leaderPick && row.crowd.leaderPct != null) {
     const pick = row.crowd.leaderPick;
+    const dec = row.crowdOdds ? row.crowdOdds[pick] : null;
     return (
       <div className="big">
         <div className="srclbl cr">同事·{PICK_SHORT[pick]}</div>
         <div className="pct">{row.crowd.leaderPct}%</div>
-        <div className="cap">暂无市场对照</div>
+        <div className="cap">
+          {dec != null ? `赔率 ${formatDecimal(dec)}x` : "暂无市场对照"}
+        </div>
       </div>
     );
   }

@@ -3,7 +3,7 @@ import { runSyncResults } from "../lib/jobs/syncResults";
 runSyncResults()
   .then((r) => {
     console.log(
-      `Synced results: settled ${r.settled}, skipped ${r.skipped}, unmatched ${r.unmatched}.`,
+      `Synced results: recorded ${r.recorded}, skipped ${r.skipped}, unmatched ${r.unmatched}.`,
     );
   })
   .catch((error) => {

@@ -1,10 +1,6 @@
 import { getLeaderboard } from "../../db/queries/ledger";
+import { getPlatformPoolTotal } from "../../db/queries/settlements";
 import { getCurrentUser } from "../../lib/identity";
-import {
-  bottlesToBuy,
-  bottlesToReceive,
-  platformPool,
-} from "../../lib/decimalOdds";
 import { formatBottles } from "../../lib/format";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function LeaderboardPage() {
   const board = getLeaderboard();
   const me = await getCurrentUser();
-  const pool = platformPool(board.map((e) => e.net_raw));
+  const pool = getPlatformPoolTotal();
 
   return (
     <section>
@@ -38,20 +34,14 @@ export default async function LeaderboardPage() {
         </p>
       ) : (
         board.map((entry, i) => {
-          const owe = bottlesToBuy(entry.pending_net);
-          const recv = bottlesToReceive(entry.pending_net);
           const isMe = me?.id === entry.id;
           const isLeader = i === 0 && entry.bets > 0;
           const balanceClass =
             entry.net_raw > 0 ? "b pos" : entry.net_raw < 0 ? "b neg" : "b zero";
           const statusText =
-            owe > 0
-              ? `欠 ${owe} 瓶 🥤`
-              : recv > 0
-                ? `收 ${recv} 瓶`
-                : entry.bets > 0
-                  ? "已结清"
-                  : "—";
+            entry.bets > 0
+              ? `${Math.round((entry.wins / entry.bets) * 100)}% 命中`
+              : "—";
           return (
             <div key={entry.id}>
               <div className={isLeader ? "lr leader" : "lr"}>

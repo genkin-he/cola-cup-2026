@@ -1,4 +1,4 @@
-import { settleMatch } from "../settlement";
+import { recordResult } from "../settlement";
 import {
   buildMatchIndex,
   resolveTeam,
@@ -43,20 +43,22 @@ function deriveResult(fd: FdMatch, fdHomeIsOurHome: boolean): Pick | null {
 }
 
 /**
- * Pull finished World Cup matches from football-data.org and auto-settle any
- * fixture we can match by team pair that isn't settled yet. Only touches
- * un-settled matches, so manual score/result corrections are never overwritten.
+ * Pull finished World Cup matches from football-data.org and record the result
+ * + score onto any fixture we can match by team pair that isn't settled yet.
+ * This does NOT settle (no ledger): it only fills the score so the match shows
+ * up pre-filled in the admin "待结算" list — settling stays a manual action.
+ * Only touches un-settled matches, so manual corrections are never overwritten.
  * No-op (not an error) when FOOTBALL_DATA_API_KEY is unset.
  */
 export async function runSyncResults(): Promise<{
-  settled: number;
+  recorded: number;
   skipped: number;
   unmatched: number;
 }> {
   const key = process.env.FOOTBALL_DATA_API_KEY;
   if (!key) {
     console.log("[syncResults] FOOTBALL_DATA_API_KEY not set — skipping.");
-    return { settled: 0, skipped: 0, unmatched: 0 };
+    return { recorded: 0, skipped: 0, unmatched: 0 };
   }
 
   const data = await fetchJsonRetry<{ matches: FdMatch[] }>(
@@ -66,7 +68,7 @@ export async function runSyncResults(): Promise<{
   const finished = data.matches ?? [];
   const index: MatchIndex = buildMatchIndex();
 
-  let settled = 0;
+  let recorded = 0;
   let skipped = 0;
   let unmatched = 0;
 
@@ -95,15 +97,14 @@ export async function runSyncResults(): Promise<{
     const homeScore = fh == null || fa == null ? null : fdHomeIsOurHome ? fh : fa;
     const awayScore = fh == null || fa == null ? null : fdHomeIsOurHome ? fa : fh;
 
-    const outcome = settleMatch(match.id, result, homeScore, awayScore);
-    // A failure here is almost always "already settled" or a knockout draw —
-    // both are fine to skip silently.
-    if (outcome.ok) settled += 1;
+    const outcome = recordResult(match.id, homeScore, awayScore, result);
+    // A failure here is almost always "already settled" — fine to skip silently.
+    if (outcome.ok) recorded += 1;
     else skipped += 1;
   }
 
   console.log(
-    `[syncResults] finished=${finished.length} settled=${settled} skipped=${skipped} unmatched=${unmatched}`,
+    `[syncResults] finished=${finished.length} recorded=${recorded} skipped=${skipped} unmatched=${unmatched}`,
   );
-  return { settled, skipped, unmatched };
+  return { recorded, skipped, unmatched };
 }

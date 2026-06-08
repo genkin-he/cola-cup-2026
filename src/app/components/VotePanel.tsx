@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Pick } from "../../lib/stage";
-
-const STAKE_CHOICES = [1, 2, 3] as const;
+import { STAKE_PRESETS, MIN_STAKE, MAX_STAKE } from "../../lib/betting";
 
 export type VotePanelProps = {
   matchId: number;
@@ -132,11 +131,11 @@ export function VotePanel({
           padding: "18px 0 0",
         }}
       >
-        猜错请客几瓶？
+        猜错请客几瓶？（预设或自定义，最多 {MAX_STAKE}）
       </p>
 
       <div className="stakes">
-        {STAKE_CHOICES.map((n) => (
+        {STAKE_PRESETS.map((n) => (
           <button
             key={n}
             type="button"
@@ -146,11 +145,33 @@ export function VotePanel({
             🥤 {n}
           </button>
         ))}
+        <input
+          type="number"
+          inputMode="numeric"
+          min={MIN_STAKE}
+          max={MAX_STAKE}
+          value={stake}
+          onChange={(e) => {
+            const n = Math.floor(Number(e.target.value));
+            if (!Number.isFinite(n)) return;
+            setStake(Math.max(MIN_STAKE, Math.min(MAX_STAKE, n)));
+          }}
+          aria-label={`自定义瓶数（最多 ${MAX_STAKE}）`}
+          className={
+            "s sin" +
+            ((STAKE_PRESETS as readonly number[]).includes(stake) ? "" : " sel")
+          }
+        />
       </div>
 
       {potential != null && pick ? (
         <p className="pot">
-          猜中约赢 <b>+{potential.toFixed(1)} 瓶</b> · 按当前投票赔率
+          猜中约赢 <b>+{potential.toFixed(2)} 瓶</b> · 按当前投票赔率
+          <br />
+          <span style={{ color: "var(--low)", fontSize: 12 }}>
+            实发按整瓶向下取整，约 {Math.floor(potential)} 瓶
+            {potential < 1 ? "（不足 1 瓶，可能为 0）" : ""}
+          </span>
         </p>
       ) : (
         <p className="pot">选个看好的并下注</p>
