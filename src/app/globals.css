@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Backgrounds (dark, 3 levels of depth) ── */
+  --color-bg-base: #0b0f0c;
+  --color-bg-surface: #121a14;
+  --color-bg-elevated: #1b271e;
+  --color-bg-pitch: #0e1a10;
+
+  /* ── Brand: Coca-Cola red ── */
+  --color-coke-red: #f40009;
+  --color-coke-red-700: #c20007;
+  --color-coke-red-300: #ff5a5f;
+
+  /* ── World Cup pitch green ── */
+  --color-pitch-green: #1fa75a;
+  --color-pitch-line: #2e7d49;
+
+  /* ── Scoreboard amber ── */
+  --color-amber: #ffb200;
+  --color-amber-soft: #ffd466;
+
+  /* ── Text ── */
+  --color-text-hi: #f4f7f2;
+  --color-text-mid: #a8b4ab;
+  --color-text-low: #6b7a6f;
+
+  /* ── Win / Draw / Loss ── */
+  --color-win: #2bd576;
+  --color-draw: #ffb200;
+  --color-loss: #ff4d57;
+
+  /* ── Up / Down / Flat (odds movement) ── */
+  --color-up: #4fb477;
+  --color-down: #d96a6f;
+  --color-flat: #7a8a7e;
+
+  /* ── Dual-source compare (core feature) ── */
+  --color-market: #4da3ff;
+  --color-crowd: #f40009;
+
+  /* ── Borders ── */
+  --color-border: #243029;
+  --color-border-hi: #3a4d3f;
+
+  /* ── Fonts (bound to next/font CSS variables) ── */
+  --font-display: var(--font-anton), "Arial Narrow", sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-spline-mono), ui-monospace, monospace;
+  --font-brand: var(--font-pacifico), cursive;
+
+  /* ── Radius ── */
+  --radius-card: 1rem;
+  --radius-pill: 9999px;
+}
+
+@layer base {
+  html {
+    background: var(--color-bg-base);
+    color: var(--color-text-hi);
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-color: var(--color-border-hi) transparent;
+  }
+  body {
+    font-family: var(--font-body);
+    min-height: 100dvh;
+  }
+  ::selection {
+    background: var(--color-coke-red);
+    color: #fff;
+  }
+}
+
+/* Tabular numbers so odds/bottle counts never shift width */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Coca-Cola bubbles rising (decorative, respects reduced-motion) */
+.bubbles {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.bubbles span {
+  position: absolute;
+  bottom: -12px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ffffff99, var(--color-coke-red-300));
+  animation: bubble-rise 3.4s ease-in infinite;
+}
+.bubbles span:nth-child(2) {
+  left: 38%;
+  width: 5px;
+  height: 5px;
+  animation-delay: 0.9s;
+}
+.bubbles span:nth-child(3) {
+  left: 68%;
+  width: 11px;
+  height: 11px;
+  animation-delay: 1.7s;
+}
+.bubbles span:nth-child(4) {
+  left: 85%;
+  width: 6px;
+  height: 6px;
+  animation-delay: 2.4s;
+}
+@keyframes bubble-rise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-130px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* Scoreboard flip tick when a number updates */
+.flip-num {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.flip-num.is-updating {
+  animation: flip-tick 0.45s ease;
+}
+@keyframes flip-tick {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-55%);
+    opacity: 0.2;
+  }
+  55% {
+    transform: translateY(55%);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Live status breathing dot */
+.live-dot {
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubbles span,
+  .flip-num.is-updating,
+  .live-dot {
+    animation: none;
+  }
+}

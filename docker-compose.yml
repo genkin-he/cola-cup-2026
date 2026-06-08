@@ -1,0 +1,21 @@
+services:
+  app:
+    build: .
+    image: cup-worldcup
+    container_name: cup
+    restart: unless-stopped
+    ports:
+      - "8026:8026"
+    environment:
+      - PORT=8026
+      - DB_PATH=/app/data/cup.db
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-worldcup-admin-2026}
+      # Auth.js — set these in a .env file next to docker-compose.yml
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_TRUST_HOST=true
+      - AUTH_URL=${AUTH_URL}
+      - AUTH_TWITTER_ID=${AUTH_TWITTER_ID}
+      - AUTH_TWITTER_SECRET=${AUTH_TWITTER_SECRET}
+    volumes:
+      # Persist the SQLite database (and WAL files) across restarts.
+      - ./data:/app/data

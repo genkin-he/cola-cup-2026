@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+
+# SQLite database (local data, do not commit)
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Local env
+.env*.local
+
+# Misc
+.DS_Store
+*.log
+next-env.d.ts
