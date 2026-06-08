@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 const EMOJI_CHOICES = [
   "🦁", "🐯", "🐼", "🦊", "🐸", "🐙", "🦅", "🐺",
@@ -19,6 +19,7 @@ export function ProfileForm({
   avatarUrl: string | null;
 }) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [nickname, setNickname] = useState(initialNickname);
   const [emoji, setEmoji] = useState<string | null>(initialEmoji);
   const [saving, setSaving] = useState(false);
@@ -41,8 +42,10 @@ export function ProfileForm({
       return;
     }
     setMsg("✅ 已保存，正在返回首页…");
-    router.refresh();
-    router.push("/");
+    startTransition(() => {
+      router.refresh();
+      router.push("/");
+    });
   }
 
   const dirty = nickname !== initialNickname || emoji !== initialEmoji;

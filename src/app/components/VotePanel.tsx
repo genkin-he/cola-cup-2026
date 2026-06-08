@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import type { Pick } from "../../lib/stage";
 import { STAKE_PRESETS, MIN_STAKE, MAX_STAKE } from "../../lib/betting";
 
@@ -25,6 +25,7 @@ export function VotePanel({
   initialStake,
 }: VotePanelProps) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
   const [pick, setPick] = useState<Pick | null>(initialPick);
   const [stake, setStake] = useState<number>(initialStake ?? 1);
   const [saving, setSaving] = useState(false);
@@ -93,7 +94,7 @@ export function VotePanel({
       return;
     }
     setSaved(true);
-    router.refresh();
+    startTransition(() => router.refresh());
     setTimeout(() => setSaved(false), 1800);
   }
 

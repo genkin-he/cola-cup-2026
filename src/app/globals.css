@@ -378,6 +378,7 @@ main {
   bottom: calc(100% + 9px);
   right: -6px;
   width: 224px;
+  white-space: normal;
   background: var(--hi);
   color: var(--bg);
   font-family: var(--body);
@@ -1425,11 +1426,8 @@ main {
   display: flex;
   flex-direction: column;
 }
-.detail-cols .right {
-  order: -1;
-}
 
-/* two-column on wide screens — restore source order (odds left, vote right) */
+/* two-column on wide screens — odds left, vote right (source order) */
 @media (min-width: 720px) {
   .detail-cols {
     display: grid;
@@ -1438,7 +1436,6 @@ main {
     align-items: start;
   }
   .detail-cols .right {
-    order: 0;
     position: sticky;
     top: 80px;
   }
@@ -1863,4 +1860,38 @@ main {
 }
 .adm-votes .vnone {
   color: var(--low);
+}
+
+/* ===========================================================
+   Loading skeletons — instant feedback during navigation
+   =========================================================== */
+.sk {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--elevated);
+  border-radius: 6px;
+}
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.6),
+    transparent
+  );
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes sk-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk::after {
+    animation: none;
+  }
 }
