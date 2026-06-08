@@ -772,6 +772,7 @@ main {
 }
 .stakes .s {
   flex: 1;
+  min-width: 0;
   text-align: center;
   padding: 13px 0;
   font-family: var(--num);
@@ -1417,7 +1418,18 @@ main {
   color: var(--loss);
 }
 
-/* ───────── two-column detail on wide screens ───────── */
+/* ───────── detail columns ─────────
+   Stacked (mobile): vote panel first — voting is the priority CTA, so it sits
+   directly under the X vs Y header, ahead of the odds comparison. */
+.detail-cols {
+  display: flex;
+  flex-direction: column;
+}
+.detail-cols .right {
+  order: -1;
+}
+
+/* two-column on wide screens — restore source order (odds left, vote right) */
 @media (min-width: 720px) {
   .detail-cols {
     display: grid;
@@ -1426,6 +1438,7 @@ main {
     align-items: start;
   }
   .detail-cols .right {
+    order: 0;
     position: sticky;
     top: 80px;
   }
@@ -1442,14 +1455,21 @@ main {
   .tabbar {
     display: flex;
   }
-  .head-right .identity {
-    display: none;
-  }
   .masthead {
     padding: 16px 0 14px;
   }
   .detail-vs {
     gap: 8px;
+  }
+  /* pin the current day's heading under the sticky site header while scrolling */
+  .daylabel {
+    position: sticky;
+    top: 51px;
+    z-index: 30;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding-bottom: 8px;
   }
 }
 

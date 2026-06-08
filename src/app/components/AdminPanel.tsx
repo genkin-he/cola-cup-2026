@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { PICK_LABELS, allowsDraw, type Pick } from "../../lib/stage";
-import { formatBottles } from "../../lib/format";
+import { formatBottles, DISPLAY_TIME_ZONE } from "../../lib/format";
 import type { SettlementPreview } from "../../lib/settlement";
 import type { SettlementDetail } from "../../db/queries/settlements";
 
@@ -85,6 +85,7 @@ type TabKey = (typeof TABS)[number]["key"];
 
 function fmtTime(ts: number): string {
   return new Date(ts).toLocaleString("zh-CN", {
+    timeZone: DISPLAY_TIME_ZONE,
     month: "numeric",
     day: "numeric",
     hour: "2-digit",

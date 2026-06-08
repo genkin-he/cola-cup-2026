@@ -1,4 +1,9 @@
+// All kickoff/schedule times are displayed in Beijing time, regardless of the
+// server (UTC in the container) or viewer's local timezone.
+export const DISPLAY_TIME_ZONE = "Asia/Shanghai";
+
 const DATE_FMT = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: DISPLAY_TIME_ZONE,
   month: "numeric",
   day: "numeric",
   hour: "2-digit",
@@ -6,20 +11,26 @@ const DATE_FMT = new Intl.DateTimeFormat("zh-CN", {
   hour12: false,
 });
 
-const WEEKDAY_FMT = new Intl.DateTimeFormat("zh-CN", { weekday: "short" });
+const WEEKDAY_FMT = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: DISPLAY_TIME_ZONE,
+  weekday: "short",
+});
 
 const DAY_FMT = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: DISPLAY_TIME_ZONE,
   month: "long",
   day: "numeric",
 });
 
 const TIME_FMT = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: DISPLAY_TIME_ZONE,
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
 });
 
 const KEY_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DISPLAY_TIME_ZONE,
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
@@ -37,7 +48,7 @@ export function formatTimeOnly(epochMs: number): string {
   return TIME_FMT.format(epochMs);
 }
 
-/** Stable YYYY-MM-DD key in local time, for day grouping. */
+/** Stable YYYY-MM-DD key in Beijing time, for day grouping. */
 export function dateKey(epochMs: number): string {
   return KEY_FMT.format(epochMs);
 }
