@@ -235,7 +235,7 @@ function MatchBig({ row }: { row: RowVM }) {
 
 function MatchRow({ row }: { row: RowVM }) {
   return (
-    <Link href={`/match/${row.id}`} className="mrow">
+    <Link href={`/match/${row.id}`} className="mrow" prefetch={false}>
       <MatchMeta row={row} />
       <MatchTeams row={row} />
       <MatchBig row={row} />
