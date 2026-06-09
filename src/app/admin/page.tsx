@@ -61,7 +61,7 @@ export default async function AdminPage() {
       <div className="adm-head">
         <h1>⚙️ 结算后台</h1>
         <p>
-          勾选已结束的比赛 → 结算预览每人该买/收多少 → 确定生成结算记录，账本随即对同事可见。
+          勾选已结束的比赛 → 结算预览每人净瓶数 → 确定生成结算记录，账本随即对同事可见。
         </p>
       </div>
       <hr className="rule ink" />
