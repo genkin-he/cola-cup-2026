@@ -2,6 +2,10 @@
 
 同事之间「赌可口可乐」的内部竞猜小工具：赛前给球队投票下注，赛后按**群众投票的帕里-玛图尔（Pari-Mutuel）赔率**结算每个人该买/该收多少瓶可乐，并维护排行榜。跑在家用机上，通过 Tailscale 内网供全员访问。
 
+<p align="center">
+  <img src="docs/preview.gif" alt="界面预览：赛程列表 / 比赛详情与赔率对比 / 玩法说明" width="640">
+</p>
+
 ## 功能
 
 - **赛程**：2026 世界杯全部 104 场比赛、48 支球队（中文名展示），数据源 [openfootball](https://github.com/openfootball/worldcup.json)，淘汰赛对阵确定后自动更新。
@@ -70,4 +74,4 @@ DHH 在 [The Majestic Monolith](https://signalvnoise.com/svn3/the-majestic-monol
 两版各自的本地开发、Docker 部署、Twitter OAuth 配置、Tailscale 内网访问与运维细节，见各自目录下的 README：
 
 - Next.js 版：[`nextjs/README.md`](nextjs/README.md)
-- Rails 版：[`rails/README.md`](rails/README.md)（含从零搭建 Ruby 环境的完整步骤、旧版数据迁移与故障排查）
+- Rails 版：[`rails/README.md`](rails/README.md)
