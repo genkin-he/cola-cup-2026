@@ -1,0 +1,11 @@
+<div class="teams" id="match_card_teams_<%= match.id %>">
+  <span class="t">
+    <span class="flag"><%= team_flag(match.home_team) %></span>
+    <span class="nm"><%= team_display_name(match.home_team, match.home_label) %></span>
+  </span>
+  <span class="x"><%= match_score_token(match) %></span>
+  <span class="t">
+    <span class="flag"><%= team_flag(match.away_team) %></span>
+    <span class="nm"><%= team_display_name(match.away_team, match.away_label) %></span>
+  </span>
+</div>

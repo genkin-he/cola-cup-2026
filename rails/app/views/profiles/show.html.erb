@@ -1,0 +1,39 @@
+<section>
+  <%= turbo_stream_from current_user, "ledger" %>
+  <div class="me">
+    <div class="who">
+      <span class="em"><%= current_user.emoji || "👤" %></span>
+      <span>
+        <div class="nm disp"><%= current_user.nickname %></div>
+        <div class="tag">参与 <%= @ledger.size %> 场 · 猜中 <%= @wins %></div>
+      </span>
+    </div>
+    <hr class="rule ink" style="margin-top: 18px">
+    <div class="netlbl">可用额度</div>
+    <%= render "profiles/balance", balance: @balance %>
+    <p class="note">额度 = 累计赢得 − 已兑换。1 额度可兑 1 瓶可乐。</p>
+  </div>
+
+  <hr class="rule">
+  <%= render "profiles/redeem_panel", balance: @balance %>
+
+  <%= render "profiles/redemption_records", redemptions: @redemptions %>
+
+  <div class="ledh disp">结算明细</div>
+  <hr class="rule">
+  <% if @ledger.empty? %>
+    <p style="padding:32px 0;text-align:center;color:var(--low);font-size:13px">还没有已结算的投注</p>
+  <% else %>
+    <% @ledger.each do |row| %>
+      <div class="led">
+        <span class="dot <%= row.won ? "w" : "l" %>"></span>
+        <span class="info">
+          <div class="t"><%= row.match.home_team&.flag %> <%= team_display_name(row.match.home_team, row.match.home_label) %> vs <%= team_display_name(row.match.away_team, row.match.away_label) %> <%= row.match.away_team&.flag %></div>
+          <div class="m"><%= Match.stage_label(row.match.stage) %> · 看好 <%= Match.pick_label(row.pick) %> · <%= bottles_count(row.stake) %> 瓶 · 赔率 <%= format("%.2f", row.d_used) %></div>
+        </span>
+        <span class="d <%= row.delta >= 0 ? "pos" : "neg" %>"><%= format_bottles(row.delta) %></span>
+      </div>
+      <hr class="rule">
+    <% end %>
+  <% end %>
+</section>

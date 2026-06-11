@@ -1,0 +1,47 @@
+<% payouts = record.payouts %>
+<details class="adm-rec">
+  <summary class="head">
+    <span>
+      <span class="id">结算 #<%= record.id %></span>
+      <span class="when"><%= format_kickoff(record.created_at) %></span>
+    </span>
+    <span class="meta"><%= record.match_count %> 场 · <%= payouts.size %> 人 · <%= bottles_label(record.bottles) %> 瓶</span>
+  </summary>
+  <div class="body">
+    <% record.matches.chronological.each do |match| %>
+      <div class="adm-mblock">
+        <div class="adm-match">
+          <span class="nm">
+            <%= team_flag(match.home_team) %> <%= team_display_name(match.home_team, match.home_label) %>
+            vs <%= team_display_name(match.away_team, match.away_label) %> <%= team_flag(match.away_team) %>
+          </span>
+          <span class="sc">
+            <%= match.home_score || "-" %>:<%= match.away_score || "-" %> ·
+            <%= match.result ? MatchesHelper::RESULT_LABEL[match.result] : "—" %>
+          </span>
+        </div>
+        <% entries = match.ledger_entries.includes(:user).order(:created_at) %>
+        <% if entries.any? %>
+          <%= render "admin/settlements/votes_breakdown", match: match, votes: entries %>
+        <% end %>
+      </div>
+    <% end %>
+
+    <hr class="adm-divider">
+
+    <% if payouts.empty? %>
+      <p class="adm-empty">本批无人下注。</p>
+    <% else %>
+      <% payouts.each do |payout| %>
+        <div class="adm-pay">
+          <span class="who"><%= payout.user&.emoji.presence || "🙂" %> <%= payout.user&.nickname || "?" %></span>
+          <span class="amt">
+            <span class="<%= payout.net.positive? ? "recv" : payout.net.negative? ? "owe" : "zero" %>">
+              <%= format_bottles(payout.net) %> 瓶
+            </span>
+          </span>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+</details>

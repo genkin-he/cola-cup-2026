@@ -1,0 +1,14 @@
+<section>
+  <%= turbo_stream_from "leaderboard" %>
+  <div class="lbh">
+    <h1 class="disp">可乐榜 🏆</h1>
+    <div class="sub">按总分排序（兑换不影响排名）</div>
+  </div>
+  <hr class="rule ink">
+
+  <% if @board.empty? %>
+    <p style="padding:40px 0;text-align:center;color:var(--low);font-size:13px">还没有人参与</p>
+  <% else %>
+    <%= render "leaderboards/board", board: @board %>
+  <% end %>
+</section>

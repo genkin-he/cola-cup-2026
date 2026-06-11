@@ -1,0 +1,16 @@
+<%#
+  Display priority: user-chosen emoji > Twitter photo > name initial.
+  Locals: emoji, avatar_url, nickname, size ("sm"|"md"|"lg", default "md").
+%>
+<% px = { "sm" => 28, "md" => 40, "lg" => 64 }.fetch(local_assigns.fetch(:size, "md").to_s, 40) %>
+<% emoji = local_assigns[:emoji] %>
+<% avatar_url = local_assigns[:avatar_url] %>
+<% nickname = local_assigns[:nickname].to_s %>
+<% ring = "border-radius:9999px;border:2px solid var(--border-hi)" %>
+<% if emoji.present? %>
+  <span style="display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;<%= ring %>;background:var(--elevated);width:<%= px %>px;height:<%= px %>px;font-size:<%= (px * 0.55).round %>px"><%= emoji %></span>
+<% elsif avatar_url.present? %>
+  <img src="<%= avatar_url %>" alt="<%= nickname %>" referrerpolicy="no-referrer" style="flex:0 0 auto;object-fit:cover;<%= ring %>;width:<%= px %>px;height:<%= px %>px">
+<% else %>
+  <span style="display:inline-flex;flex:0 0 auto;align-items:center;justify-content:center;<%= ring %>;background:var(--elevated);font-family:var(--disp);width:<%= px %>px;height:<%= px %>px;font-size:<%= (px * 0.45).round %>px"><%= nickname[0, 1].to_s.upcase %></span>
+<% end %>

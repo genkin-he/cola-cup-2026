@@ -1,0 +1,4 @@
+<%= turbo_stream.update "admin_preview" do %>
+  <%= render "admin/settlements/preview_sheet",
+        preview: @preview, matches_by_id: @matches_by_id, included: @included %>
+<% end %>

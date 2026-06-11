@@ -1,0 +1,5 @@
+<%= link_to match_path(match), class: "mrow" do %>
+  <%= render "matches/card_meta", match: match, voted: voted %>
+  <%= render "matches/card_teams", match: match %>
+  <%= render "matches/card_big", match: match, tally: tally, market: market %>
+<% end %>

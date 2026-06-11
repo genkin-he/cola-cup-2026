@@ -1,0 +1,28 @@
+<%# Broadcast-safe leaderboard rows: no current_user — the 「你」 badge is added
+    client-side by the highlight_me Stimulus controller (idempotent) from the
+    current-user-id meta tag, so the same markup serves initial render and broadcast. %>
+<div id="leaderboard_rows" data-controller="highlight-me">
+  <% board.each_with_index do |entry, i| %>
+    <% bets = entry.bets.to_i %>
+    <% wins = entry.wins.to_i %>
+    <% total = entry.total.to_f %>
+    <% redeemed = entry.redeemed.to_f %>
+    <% leader = i.zero? && bets > 0 %>
+    <% total_class = total > 0 ? "b pos" : total < 0 ? "b neg" : "b zero" %>
+    <div data-user-id="<%= entry.id %>">
+      <div class="<%= leader ? "lr leader" : "lr" %>">
+        <span class="rk"><%= i + 1 %></span>
+        <span class="em"><%= entry.emoji || "👤" %></span>
+        <span class="who">
+          <div class="nm"><%= entry.nickname %></div>
+          <div class="m"><%= bets %> 场 · 猜中 <%= wins %><% if bets > 0 %> · <%= (wins.to_f / bets * 100).round %>% 命中<% end %></div>
+        </span>
+        <span class="n">
+          <div class="<%= total_class %>"><%= format_bottles(total) %></div>
+          <div class="st"><%= redeemed > 0 ? "已兑 #{format('%.1f', redeemed)}" : "未兑换" %></div>
+        </span>
+      </div>
+      <hr class="rule">
+    </div>
+  <% end %>
+</div>

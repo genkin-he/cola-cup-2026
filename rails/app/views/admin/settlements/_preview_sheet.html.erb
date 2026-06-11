@@ -1,0 +1,97 @@
+<%# locals: preview (Settlement::Preview), matches_by_id, included (submitted opt-in or nil) %>
+<div class="adm-modal" data-controller="preview-sheet" data-action="click->preview-sheet#backdrop">
+  <%= form_with url: admin_settlements_path, method: :post,
+        data: { preview_sheet_target: "form", action: "click->preview-sheet#stop" } do %>
+    <div class="adm-sheet">
+      <div class="top">
+        <h3>结算预览</h3>
+        <span class="cnt"><%= preview.matches.size %> 场</span>
+      </div>
+
+      <% preview.matches.each do |preview_match| %>
+        <% match = matches_by_id[preview_match.match_id] %>
+        <%= hidden_field_tag "match_ids[]", preview_match.match_id %>
+        <div class="adm-mblock">
+          <div class="adm-match">
+            <span class="nm"><%= match ? "#{team_display_name(match.home_team, match.home_label)} vs #{team_display_name(match.away_team, match.away_label)}" : "##{preview_match.match_id}" %></span>
+            <span class="sc"><%= preview_match.home_score || "-" %>:<%= preview_match.away_score || "-" %> · <%= result_team_name(match, preview_match.result) %></span>
+          </div>
+
+          <% if preview_match.votes.empty? %>
+            <p class="adm-skip">本场无人下注</p>
+          <% else %>
+            <%# sentinel keeps the key present so an all-unchecked match submits [] (= skip) %>
+            <%= hidden_field_tag "included[#{preview_match.match_id}][]", "" %>
+            <div class="adm-roster-head">
+              <span class="cnt-sel">参与结算 <%= preview_match.votes.size %> 人</span>
+            </div>
+            <div class="adm-votes">
+              <% roster_groups(match).each do |pick, label| %>
+                <div class="vline">
+                  <span class="vk"><%= MatchesHelper::PICK_SHORT[pick] %> <%= label %></span>
+                  <span class="vlist">
+                    <% list = preview_match.votes.select { |vote| vote.pick == pick } %>
+                    <% if list.empty? %>
+                      <span class="vnone">—</span>
+                    <% else %>
+                      <% list.each do |vote| %>
+                        <% on = roster_checked?(included, preview_match.match_id, vote.user_id) %>
+                        <label class="vchip vchip-sel<%= on ? "" : " off" %>">
+                          <%= check_box_tag "included[#{preview_match.match_id}][]", vote.user_id, on,
+                                data: { action: "change->preview-sheet#recompute" } %>
+                          <%= vote.emoji.presence || "🙂" %> <%= vote.nickname %> <%= stake_label(vote.stake) %>🥤
+                        </label>
+                      <% end %>
+                    <% end %>
+                  </span>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% if preview.skipped.any? %>
+        <p class="adm-skip">跳过 <%= preview.skipped.size %> 场（<%= preview.skipped.first[:reason] %> 等）</p>
+      <% end %>
+
+      <hr class="adm-divider">
+
+      <% winners = preview.users.select { |user| user.net.positive? } %>
+      <% losers = preview.users.select { |user| user.net.negative? } %>
+      <% if preview.users.empty? %>
+        <p class="adm-empty">没有参与结算的人。</p>
+      <% else %>
+        <% if winners.any? %>
+          <div class="adm-grp">
+            <p class="lbl">本批赢家（账上 +）</p>
+            <% winners.each do |user| %>
+              <div class="adm-pay">
+                <span class="who"><%= user.emoji.presence || "🙂" %> <%= user.nickname %></span>
+                <span class="amt recv"><%= format_bottles(user.net) %> 瓶</span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <% if losers.any? %>
+          <div class="adm-grp">
+            <p class="lbl">本批输家（账上 −）</p>
+            <% losers.each do |user| %>
+              <div class="adm-pay">
+                <span class="who"><%= user.emoji.presence || "🙂" %> <%= user.nickname %></span>
+                <span class="amt owe"><%= format_bottles(user.net) %> 瓶</span>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      <% end %>
+
+      <div class="adm-actions">
+        <button type="submit" class="cta">确定结算</button>
+        <button type="submit" class="adm-btn" formaction="<%= preview_admin_settlements_path %>" formmethod="post"
+                data-preview-sheet-target="recompute">重新计算</button>
+        <%= link_to "取消", admin_settlements_path, class: "adm-btn" %>
+      </div>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,41 @@
+<% today_key = day_key(Time.current) %>
+<% grouped = @matches.group_by { |match| day_key(match.kickoff_at) } %>
+
+<section data-controller="schedule-filter">
+  <%= turbo_stream_from "schedule" %>
+  <div class="masthead">
+    <h1 class="headline disp">
+      按赔率<br>
+      <em>赢可乐</em> 🥤
+    </h1>
+    <p class="tagline">
+      同事预测结算，猜错给同事买饮料。
+      <%= link_to "什么是「可乐」？", about_path %>
+    </p>
+  </div>
+
+  <hr class="rule ink">
+
+  <div class="subtabs">
+    <% [ [ "all", "全部" ], [ "open", "仅可预测" ], [ "done", "已结束" ] ].each_with_index do |(value, label), idx| %>
+      <button type="button"
+              class="<%= "on" if idx.zero? %>"
+              data-schedule-filter-target="tab"
+              data-filter="<%= value %>"
+              data-action="schedule-filter#select">
+        <%= label %>
+      </button>
+    <% end %>
+  </div>
+
+  <p class="schedule-empty" data-schedule-filter-target="empty" hidden
+     style="padding:40px 0;text-align:center;color:var(--low);font-size:13px;">
+    没有符合条件的比赛
+  </p>
+
+  <div id="schedule">
+    <% grouped.each do |key, day_matches| %>
+      <%= render "matches/day_section", key: key, day_matches: day_matches, today_key: today_key %>
+    <% end %>
+  </div>
+</section>

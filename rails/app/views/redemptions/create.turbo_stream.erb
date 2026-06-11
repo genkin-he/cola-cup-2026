@@ -1,0 +1,9 @@
+<%= turbo_stream.replace "me_balance" do %>
+  <%= render "profiles/balance", balance: @balance %>
+<% end %>
+<%= turbo_stream.replace "redeem_panel" do %>
+  <%= render "profiles/redeem_panel", balance: @balance, error: @error %>
+<% end %>
+<%= turbo_stream.replace "redemption_records" do %>
+  <%= render "profiles/redemption_records", redemptions: @redemptions %>
+<% end %>

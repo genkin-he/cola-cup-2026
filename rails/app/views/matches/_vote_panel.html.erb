@@ -1,0 +1,73 @@
+<% has_identity = current_user.present? %>
+<% votable = status == :open %>
+<% error = local_assigns[:error] %>
+<div class="vp" id="vote_panel_<%= match.id %>">
+  <% if !has_identity %>
+    <h2 class="disp">想预测？</h2>
+    <p class="signed-lock">
+      先去 <%= link_to "设置身份", identity_path, style: "color: var(--red); border-bottom: 1px solid color-mix(in srgb,var(--red) 45%,transparent)" %>。
+    </p>
+  <% elsif !votable %>
+    <h2 class="disp"><%= user_vote ? "已锁定" : "未开放" %></h2>
+    <p class="signed-lock">
+      <% if user_vote %>
+        🔒 你看好 <b><%= pick_team_label(match, user_vote.pick) %></b> · <%= bottles_count(user_vote.stake) %> 瓶。
+      <% else %>
+        🔒 当前无法预测（无赔率或已锁定）。
+      <% end %>
+    </p>
+  <% else %>
+    <% picks = match.valid_picks %>
+    <% current_pick = user_vote&.pick %>
+    <% decimal = current_pick ? vote_odds&.public_send("d_#{current_pick}") : nil %>
+    <% potential = (decimal && decimal.finite? && decimal > 0) ? match.stake * (decimal - 1) : nil %>
+    <div data-controller="vote-panel countdown"
+         data-vote-panel-stake-value="<%= match.stake %>"
+         data-vote-panel-confirmed-value="<%= current_pick %>"
+         data-countdown-closes-at-value="<%= match.vote_closes_at.iso8601 %>">
+      <h2 class="disp">你看好谁？</h2>
+      <%= form_with url: match_vote_path(match), method: :post do %>
+        <%= hidden_field_tag :pick, current_pick, data: { vote_panel_target: "pickInput" } %>
+        <div class="picks<%= " two" if picks.size == 2 %>">
+          <% picks.each do |key| %>
+            <button type="button" class="p<%= " sel" if current_pick == key %>"
+                    data-vote-panel-target="pick" data-pick="<%= key %>"
+                    data-odds="<%= vote_odds&.public_send("d_#{key}") %>"
+                    data-label="<%= pick_team_label(match, key) %>"
+                    data-action="vote-panel#select"><%= pick_team_label(match, key) %></button>
+          <% end %>
+        </div>
+
+        <p class="changenote" style="text-align:left;color:var(--mid);font-size:13px;padding:18px 0 0">
+          本场固定下注 <b><%= bottles_count(match.stake) %> 瓶</b> · 猜错就请这几瓶
+        </p>
+
+        <p class="pot" data-vote-panel-target="pot">
+          <% if potential %>
+            猜中约赢 <b>+<%= format("%.1f", potential) %> 瓶</b> · 按当前预测赔率
+            <br>
+            <span style="color: var(--low); font-size: 12px">零头会累计，攒满 1 瓶即可领</span>
+          <% else %>
+            选个看好的
+          <% end %>
+        </p>
+
+        <% if error %><p class="formerror"><%= error %></p><% end %>
+
+        <%# Disabled until the picker selects something other than the saved pick. %>
+        <button type="submit" class="cta" data-vote-panel-target="submit" disabled>
+          <%= current_pick ? "✅ 当前已预测 #{pick_team_label(match, current_pick)}" : "🥤 选个看好的" %>
+        </button>
+      <% end %>
+
+      <div class="vp-foot">
+        <% if next_match_id %>
+          <%= link_to match_path(next_match_id), class: "vp-back" do %>下一场 <span class="bk-arrow">→</span><% end %>
+        <% else %>
+          <%= link_to root_path(anchor: "match_card_#{match.id}"), class: "vp-back" do %><span class="bk-arrow">←</span> 返回赛程<% end %>
+        <% end %>
+        <span class="vp-hint">开赛前可随时改或<% if current_pick %><%= button_to "取消预测", match_vote_path(match), method: :delete, class: "vp-cancel-link", form: { style: "display:inline" } %><% else %>取消预测<% end %></span>
+      </div>
+    </div>
+  <% end %>
+</div>

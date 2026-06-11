@@ -1,0 +1,56 @@
+<% featured_index = odds_featured_index(outcomes) %>
+<% lead_index = odds_lead_index(outcomes) %>
+<% has_market = outcomes.any? { |o| !o[:market_p].nil? } %>
+<% crowd_legend = crowd_total > 0 ? "同事 · #{crowd_total} 人" : "同事" %>
+<% show_low_sample = low_sample && crowd_total > 0 %>
+<div class="oc" id="odds_compare_<%= match.id %>">
+  <h2 class="disp">赔率对比</h2>
+  <p class="oc-note">
+    每个结果对比两个来源 —— <b class="mk">⚽ Polymarket 市场</b> 与
+    <b class="cr">🥤 同事预测</b>。
+    <b style="color: var(--hi)">结算只看同事预测</b>
+    （开赛前 1 小时锁定），市场仅作参考。
+  </p>
+
+  <div class="bar-head">
+    <div class="legend">
+      <span class="lg">
+        <i class="mk"></i>
+        市场
+        <% unless has_market %><span class="lg-tag info">未开盘</span><% end %>
+      </span>
+      <span class="lg">
+        <i class="cr"></i>
+        <%= crowd_legend %>
+        <% if show_low_sample %><span class="lg-tag warn" title="样本不足，赔率仅供参考">样本少</span><% end %>
+      </span>
+    </div>
+    <% if polymarket_url %>
+      <a class="market-link" href="<%= polymarket_url %>" target="_blank" rel="noopener noreferrer">
+        ⚽ Polymarket 市场数据 <span class="arrow">↗</span>
+      </a>
+    <% end %>
+  </div>
+
+  <% outcomes.each_with_index do |o, i| %>
+    <% featured = (i == featured_index) %>
+    <div class="<%= featured ? "odds-out featured" : "odds-out" %>">
+      <div class="odds-head">
+        <span class="o-nm"><%= o[:team_label] %><% if o[:key] != "draw" %><small><%= Match.pick_label(o[:key]) %></small><% end %></span>
+        <% if i == lead_index %><%= odds_lead_label(o[:crowd_p], o[:market_p], featured) %><% end %>
+      </div>
+      <div class="odds-bars">
+        <div class="ob">
+          <span class="ob-lbl mk">⚽ 市场</span>
+          <span class="ob-track"><i class="mk" style="width: <%= odds_clamp_width(o[:market_p]) %>%"></i></span>
+          <span class="ob-pct mk"><%= odds_pct_text(o[:market_p]) %></span>
+        </div>
+        <div class="ob">
+          <span class="ob-lbl cr">🥤 同事</span>
+          <span class="ob-track"><i class="cr" style="width: <%= odds_clamp_width(o[:crowd_p]) %>%"></i></span>
+          <span class="ob-pct cr"><%= odds_pct_text(o[:crowd_p]) %></span>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

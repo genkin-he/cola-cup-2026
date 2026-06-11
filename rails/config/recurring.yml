@@ -1,0 +1,47 @@
+<%
+  # Translate the legacy CRON_*_MIN variables (interval in minutes) into a
+  # deterministic cron expression Fugit can always parse. Invalid or
+  # non-positive values fall back to the default.
+  cron_for = lambda do |env_key, default_min|
+    minutes = begin
+      Integer(ENV.fetch(env_key, default_min))
+    rescue ArgumentError, TypeError
+      default_min
+    end
+    minutes = default_min unless minutes.positive?
+
+    if minutes < 60 && (60 % minutes).zero?
+      "*/#{minutes} * * * *"
+    elsif (minutes % 60).zero? && (minutes / 60) < 24 && (24 % (minutes / 60)).zero?
+      "0 */#{minutes / 60} * * *"
+    elsif minutes == 1440
+      "0 4 * * *"
+    elsif (minutes % 1440).zero?
+      "0 4 */#{minutes / 1440} * *"
+    else
+      "every #{minutes} minutes"
+    end
+  end
+%>
+production: &production
+  fetch_odds:
+    class: FetchOddsJob
+    queue: default
+    schedule: "<%= cron_for.call('CRON_ODDS_MIN', 60) %>"
+  sync_results:
+    class: SyncResultsJob
+    queue: default
+    schedule: "<%= cron_for.call('CRON_RESULTS_MIN', 15) %>"
+  import_schedule:
+    class: ImportScheduleJob
+    queue: default
+    schedule: "<%= cron_for.call('CRON_SCHEDULE_MIN', 1440) %>"
+  lock_due_matches:
+    class: LockDueMatchesJob
+    queue: default
+    schedule: "*/10 * * * *"
+  clear_solid_queue_finished_jobs:
+    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+    schedule: every hour at minute 12
+
+development: *production

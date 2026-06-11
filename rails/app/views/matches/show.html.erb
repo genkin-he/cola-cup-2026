@@ -1,0 +1,43 @@
+<% status = @match.status %>
+<section>
+  <%= turbo_stream_from "match", @match %>
+  <div class="detail-head">
+    <%= link_to root_path(anchor: "match_card_#{@match.id}"), class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+    <span class="detail-stage"><%= Match.stage_label(@match.stage) %><% if @match.group_name.present? %> · <%= @match.group_name %><% end %></span>
+    <%= status_badge(status) %>
+  </div>
+  <hr class="rule">
+
+  <div class="detail-vs">
+    <span class="team">
+      <span class="flag"><%= team_flag(@match.home_team) %></span>
+      <span class="nm"><%= team_display_name(@match.home_team, @match.home_label) %></span>
+    </span>
+    <span class="x"><%= detail_score_token(@match) %></span>
+    <span class="team">
+      <span class="flag"><%= team_flag(@match.away_team) %></span>
+      <span class="nm"><%= team_display_name(@match.away_team, @match.away_label) %></span>
+    </span>
+  </div>
+
+  <div class="detail-when">
+    <%= format_kickoff(@match.kickoff_at) %><% if @match.venue.present? %><span class="venue"> · <%= @match.venue %></span><% end %>
+  </div>
+  <hr class="rule">
+
+  <div class="detail-cols">
+    <div class="left">
+      <%= render "matches/odds_compare",
+            match: @match, outcomes: @outcomes, crowd_total: @tally.voters,
+            low_sample: @vote_odds&.low_sample?, polymarket_url: @polymarket_url %>
+    </div>
+    <div class="right">
+      <%= render "matches/vote_panel",
+            match: @match, status: status, user_vote: @user_vote,
+            next_match_id: @next_match_id, vote_odds: @vote_odds %>
+      <%= render "matches/votes_list", match: @match, votes: @votes %>
+    </div>
+  </div>
+</section>

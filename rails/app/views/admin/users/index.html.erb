@@ -1,0 +1,30 @@
+<section>
+  <div class="adm-head">
+    <h1>⚙️ 用户管理</h1>
+    <p>删除为软删除：该用户将从排行榜、赔率和结算中消失，且无法登录；随时可恢复。</p>
+  </div>
+  <hr class="rule ink">
+
+  <div class="user-admin">
+    <ul>
+      <% @users.each do |user| %>
+        <li class="<%= "gone" if user.deleted? %>">
+          <span class="em"><%= user.emoji.presence || "👤" %></span>
+          <span class="who">
+            <span class="nm"><%= user.nickname %></span>
+            <% if (handle = user.primary_handle).present? %>
+              <span class="hd">@<%= handle %></span>
+            <% end %>
+          </span>
+          <% if user == current_user %>
+            <span class="self">本人</span>
+          <% elsif user.deleted? %>
+            <%= button_to "恢复", restore_admin_user_path(user), method: :patch, class: "restore" %>
+          <% else %>
+            <%= button_to "删除", admin_user_path(user), method: :delete, class: "delete" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+</section>

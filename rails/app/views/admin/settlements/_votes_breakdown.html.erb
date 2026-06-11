@@ -1,0 +1,18 @@
+<%# locals: match, votes (Vote or LedgerEntry records — respond to pick/stake/user) %>
+<div class="adm-votes">
+  <% roster_groups(match).each do |pick, label| %>
+    <div class="vline">
+      <span class="vk"><%= MatchesHelper::PICK_SHORT[pick] %> <%= label %></span>
+      <span class="vlist">
+        <% list = votes.select { |vote| vote.pick == pick } %>
+        <% if list.empty? %>
+          <span class="vnone">—</span>
+        <% else %>
+          <% list.each do |vote| %>
+            <span class="vchip"><%= vote.user.emoji.presence || "🙂" %> <%= vote.user.nickname %> <%= stake_label(vote.stake) %>🥤</span>
+          <% end %>
+        <% end %>
+      </span>
+    </div>
+  <% end %>
+</div>

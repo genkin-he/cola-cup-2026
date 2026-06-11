@@ -1,0 +1,49 @@
+# SQLite everywhere: four separate databases (primary / cache / queue / cable)
+# so Solid Queue/Cache/Cable churn never contends with the business database.
+# Development mirrors production so the whole Solid stack runs for real locally.
+default: &default
+  adapter: sqlite3
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  timeout: 5000
+
+development:
+  primary:
+    <<: *default
+    database: storage/development.sqlite3
+  cache:
+    <<: *default
+    database: storage/development_cache.sqlite3
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: storage/development_queue.sqlite3
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: storage/development_cable.sqlite3
+    migrations_paths: db/cable_migrate
+
+# Test only needs the primary database: queue uses the :test adapter,
+# cache uses :null_store and cable uses the test adapter (see config/cable.yml).
+test:
+  <<: *default
+  database: storage/test.sqlite3
+
+# In Docker, /rails/storage is a persistent volume holding all four databases.
+# DB_PATH keeps the old deployment's variable working (primary database only).
+production:
+  primary:
+    <<: *default
+    database: <%= ENV.fetch("DB_PATH", "storage/production.sqlite3") %>
+  cache:
+    <<: *default
+    database: storage/production_cache.sqlite3
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: storage/production_queue.sqlite3
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: storage/production_cable.sqlite3
+    migrations_paths: db/cable_migrate

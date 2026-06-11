@@ -1,0 +1,44 @@
+<%
+  user = signed_in_user
+  tabs = [
+    { href: "/",            icon: "⚽", label: "赛程" },
+    { href: "/leaderboard", icon: "🏆", label: "排行" },
+    { href: "/me",          icon: "👤", label: "我的" },
+    { href: "/about",       icon: "📖", label: "说明" }
+  ]
+  tabs << { href: "/admin", icon: "⚙️", label: "管理" } if user&.settler?
+%>
+<header class="site-head">
+  <div class="shell">
+    <div class="bar">
+      <%= link_to "/", class: "wm" do %>
+        <span class="wm-pre">The Cola of Cup</span>
+        <span class="yr">2026</span>
+      <% end %>
+      <nav class="nav">
+        <% tabs.each do |tab| %>
+          <%= link_to tab[:href], class: ("on" if nav_tab_active?(tab[:href])) do %>
+            <span class="ic"><%= tab[:icon] %></span><%= tab[:label] %>
+          <% end %>
+        <% end %>
+      </nav>
+      <div class="head-right">
+        <% if user %>
+          <%= link_to "/me", class: "identity" do %>
+            <%= user.emoji || "👤" %> <%= user.nickname %>
+          <% end %>
+        <% else %>
+          <%= link_to "登录", "/identity", class: "identity" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <% tabs.each do |tab| %>
+    <%= link_to tab[:href], class: ("on" if nav_tab_active?(tab[:href])) do %>
+      <span class="ic"><%= tab[:icon] %></span><%= tab[:label] %>
+    <% end %>
+  <% end %>
+</nav>

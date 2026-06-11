@@ -1,0 +1,20 @@
+<% primary, is_today = relative_day_heading(key, today_key) %>
+<% date_label = format_day_label(day_matches.first.kickoff_at) %>
+<section data-schedule-filter-target="section" data-day-key="<%= key %>">
+  <div class="daylabel">
+    <span class="big<%= " today" if is_today %>"><%= primary || date_label %></span>
+    <span class="sm"><% if primary %><%= date_label %> · <% end %><span data-schedule-filter-target="count"><%= day_matches.size %></span> 场</span>
+  </div>
+  <hr class="rule">
+  <% day_matches.each do |match| %>
+    <div id="match_card_<%= match.id %>" class="mrow-anchor"
+         data-schedule-filter-target="row" data-status="<%= match.status %>">
+      <%= render "matches/match_card",
+            match: match,
+            tally: @tallies[match.id] || Vote.empty_tally,
+            market: @market_odds[match.id],
+            voted: @voted_match_ids.include?(match.id) %>
+      <hr class="rule">
+    </div>
+  <% end %>
+</section>

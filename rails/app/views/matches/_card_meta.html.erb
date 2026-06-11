@@ -1,0 +1,10 @@
+<div class="meta" id="match_card_meta_<%= match.id %>">
+  <span class="time"><%= format_time_only(match.kickoff_at) %></span>
+  <span>·</span>
+  <span><%= Match.stage_label(match.stage) %><% if (letter = match_group_letter(match)) %> <%= letter %><% end %></span>
+  <% if match.status == :open && voted %>
+    <span class="badge voted meta-badge">✓ 已预测</span>
+  <% else %>
+    <%= status_badge(match.status, extra_class: "meta-badge") %>
+  <% end %>
+</div>

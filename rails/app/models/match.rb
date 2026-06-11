@@ -1,0 +1,218 @@
+class Match < ApplicationRecord
+  # Raised by the mutating helpers with a Chinese, player-facing message; the
+  # admin controllers rescue it to render the error verbatim.
+  DomainError = Class.new(StandardError)
+
+  STAGES = %w[group r32 r16 qf sf third final].freeze
+  KNOCKOUT_STAGES = %w[r32 r16 qf sf third final].to_set.freeze
+  PICKS = %w[home draw away].freeze
+
+  # Fixed stake per stage, in bottles of coke — server-determined; the client
+  # only picks a side. Group is cheap (many matches a week); stakes rise through
+  # the knockout rounds. Single source of truth.
+  STAKE_BY_STAGE = {
+    "group" => 1.0,
+    "r32" => 2.0, "r16" => 2.0, "qf" => 2.0,
+    "sf" => 5.0, "third" => 5.0, "final" => 5.0
+  }.freeze
+
+  VOTE_OPENS_BEFORE = 7.days   # voting opens one week before kickoff
+  VOTE_CLOSES_BEFORE = 1.hour  # voting closes one hour before kickoff
+
+  STAGE_LABELS = {
+    "group" => "小组赛", "r32" => "32 强", "r16" => "16 强", "qf" => "8 强",
+    "sf" => "半决赛", "third" => "季军赛", "final" => "决赛"
+  }.freeze
+  PICK_LABELS = { "home" => "主胜", "draw" => "平局", "away" => "客胜" }.freeze
+
+  belongs_to :home_team, class_name: "Team", optional: true
+  belongs_to :away_team, class_name: "Team", optional: true
+  belongs_to :settlement, optional: true
+
+  has_many :votes, dependent: :destroy
+  has_many :ledger_entries, dependent: :destroy
+  has_many :odds_snapshots, dependent: :destroy
+  has_one :poly_market, dependent: :destroy
+
+  validates :external_key, presence: true, uniqueness: true
+  validates :stage, presence: true, inclusion: { in: STAGES }
+  validates :kickoff_at, presence: true
+
+  scope :chronological, -> { order(:kickoff_at, :id) }
+  # Admin "待结算" list: kicked-off matches not yet settled (the result/score may
+  # still be blank — the settler records it from this list before settling).
+  scope :settle_todo, ->(now = Time.current) {
+    where(settled: false).where(kickoff_at: ..now).chronological
+  }
+  # Matches whose voting window has closed (within 1h of kickoff) and that are
+  # not yet settled — the LockDueMatchesJob freezes their binding odds.
+  scope :due_for_lock, ->(now = Time.current) {
+    where(settled: false).where(kickoff_at: ..(now + VOTE_CLOSES_BEFORE))
+  }
+
+  # A recorded score/result (but not a settlement flag flip — SettlementJob owns
+  # that) refreshes the schedule card and the detail page.
+  after_commit :broadcast_result_change, on: :update
+
+  def broadcast_result_change
+    return if saved_change_to_settled?
+    return unless saved_change_to_result? || saved_change_to_home_score? || saved_change_to_away_score?
+
+    Broadcasts::MatchResultJob.perform_later(id)
+  end
+
+  class << self
+    def knockout?(stage)
+      KNOCKOUT_STAGES.include?(stage)
+    end
+
+    def allows_draw?(stage)
+      !knockout?(stage)
+    end
+
+    def stage_label(stage)
+      STAGE_LABELS.fetch(stage, stage)
+    end
+
+    def pick_label(pick)
+      PICK_LABELS.fetch(pick, pick)
+    end
+  end
+
+  def vote_opens_at
+    kickoff_at - VOTE_OPENS_BEFORE
+  end
+
+  def vote_closes_at
+    kickoff_at - VOTE_CLOSES_BEFORE
+  end
+
+  # Both teams are determined (knockout placeholders are not). Drives votability
+  # — independent of whether any odds line exists.
+  def bettable?
+    home_team_id.present? && away_team_id.present?
+  end
+
+  # Precise port of the legacy deriveStatus state machine.
+  def status(now: Time.current)
+    return :settled if settled?
+    return :locked if now >= vote_closes_at
+    return :scheduled if now < vote_opens_at
+
+    bettable? ? :open : :upcoming
+  end
+
+  def votable?(now: Time.current)
+    status(now: now) == :open
+  end
+
+  def knockout?
+    self.class.knockout?(stage)
+  end
+
+  def allows_draw?
+    !knockout?
+  end
+
+  def valid_picks
+    allows_draw? ? PICKS : %w[home away]
+  end
+
+  def stake
+    STAKE_BY_STAGE.fetch(stage, 1.0)
+  end
+
+  # Result implied by the score; nil when undecidable (no score, or a knockout
+  # draw — where the advancing side must be picked explicitly).
+  def derive_result_from_score(home_score, away_score)
+    return nil if home_score.nil? || away_score.nil?
+    return "home" if home_score > away_score
+    return "away" if home_score < away_score
+
+    knockout? ? nil : "draw"
+  end
+
+  # Record the score + result without settling (no ledger, settled stays false).
+  # Used by the results sync (explicit winner, covering ET/penalties) and admin
+  # score edits on un-settled matches (result derived from the score).
+  def record_result!(home_score:, away_score:, result: nil)
+    raise DomainError, "该比赛已结算，请用修改比分" if settled?
+
+    resolved = result.presence || derive_result_from_score(home_score, away_score)
+    unless resolved
+      raise DomainError, knockout? ? "淘汰赛比分相同，请选择晋级方" : "请填写比分"
+    end
+
+    update!(result: resolved, home_score: home_score, away_score: away_score, result_at: Time.current)
+  end
+
+  # Correct or fill a settled match's display score without re-running settlement.
+  def update_display_score!(home_score:, away_score:)
+    update!(home_score: home_score, away_score: away_score)
+  end
+
+  def vote_tally
+    Vote.tally_for(self)
+  end
+
+  # Live crowd odds from the current tally (nil when nothing wagered).
+  def current_vote_odds
+    VoteOdds.from_tally(vote_tally, allows_draw: allows_draw?)
+  end
+
+  # Latest odds per source for display: market (polymarket), crowd snapshot, and
+  # the locked market line used for "crowd vs market" comparison.
+  def display_odds
+    {
+      polymarket: latest_snapshot("polymarket"),
+      vote: latest_snapshot("vote"),
+      locked: locked_market_odds
+    }
+  end
+
+  # Freeze the binding odds, idempotent per source. Settlement uses the locked
+  # crowd-vote odds (the market line is frozen only for display). Returns the
+  # locked vote snapshot (the settlement basis) or nil when no one voted.
+  def ensure_locked_odds!(now: Time.current)
+    unless odds_snapshots.exists?(locked: true, source: OddsSnapshot::MARKET_SOURCES)
+      latest = latest_market_odds
+      write_locked_snapshot!(latest.source, latest, now) if latest
+    end
+
+    vote = locked_vote_odds
+    if vote.nil?
+      crowd = VoteOdds.from_tally(vote_tally, allows_draw: allows_draw?)
+      vote = write_locked_snapshot!("vote", crowd, now) if crowd
+    end
+    vote
+  end
+
+  private
+
+  def latest_snapshot(source)
+    odds_snapshots.where(source: source).order(locked: :desc, taken_at: :desc).first
+  end
+
+  def latest_market_odds
+    odds_snapshots.where(source: OddsSnapshot::MARKET_SOURCES)
+      .order(locked: :desc, taken_at: :desc).first
+  end
+
+  def locked_market_odds
+    odds_snapshots.where(locked: true, source: OddsSnapshot::MARKET_SOURCES)
+      .order(taken_at: :desc).first
+  end
+
+  def locked_vote_odds
+    odds_snapshots.where(locked: true, source: "vote").order(taken_at: :desc).first
+  end
+
+  def write_locked_snapshot!(source, odds, now)
+    odds_snapshots.create!(
+      source: source, locked: true,
+      p_home: odds.p_home, p_draw: odds.p_draw, p_away: odds.p_away,
+      d_home: odds.d_home, d_draw: odds.d_draw, d_away: odds.d_away,
+      taken_at: now
+    )
+  end
+end

@@ -1,0 +1,50 @@
+# Production single-container deployment (home server + Tailscale).
+# Variable values are substituted from a `.env` file sitting next to this file
+# (copy .env.example → .env). Mirrors the old Next.js stack: host port 8026,
+# SQLite persisted on a volume, periodic jobs running inside the container.
+services:
+  app:
+    build: .
+    image: cup
+    container_name: cup2026-rails
+    restart: unless-stopped
+    ports:
+      # Host 8026 → Thruster on container port 80 (gzip + static cache + WS proxy).
+      - "8026:80"
+    environment:
+      # Session/signing secret. REQUIRED — compose aborts if unset. Reuse the old
+      # stack's AUTH_SECRET value here. Generate a new one with: openssl rand -hex 64
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE is required (openssl rand -hex 64)}
+      # Store UTC, display Beijing time — matches the app default.
+      TZ: Asia/Shanghai
+      # Public base URL: OAuth callback base, Action Cable origin, https detection.
+      AUTH_URL: ${AUTH_URL}
+      # Twitter (X) OAuth 2.0 — Client ID / Secret from developer.x.com.
+      AUTH_TWITTER_ID: ${AUTH_TWITTER_ID:-}
+      AUTH_TWITTER_SECRET: ${AUTH_TWITTER_SECRET:-}
+      # Settlement accounts (X usernames or numeric ids, comma-separated).
+      SETTLER_USERNAMES: ${SETTLER_USERNAMES:-}
+      # football-data.org token for auto score sync (optional; manual entry otherwise).
+      FOOTBALL_DATA_API_KEY: ${FOOTBALL_DATA_API_KEY:-}
+      # Run the Solid Queue supervisor inside Puma — no separate worker container.
+      SOLID_QUEUE_IN_PUMA: "true"
+      # Built-in recurring jobs (odds/results/schedule/lock). false → entrypoint
+      # exports SOLID_QUEUE_SKIP_RECURRING=true so nothing is scheduled.
+      RUN_SCHEDULER: ${RUN_SCHEDULER:-true}
+      # Optional interval overrides (minutes); blank → recurring.yml defaults.
+      CRON_ODDS_MIN: ${CRON_ODDS_MIN:-}
+      CRON_RESULTS_MIN: ${CRON_RESULTS_MIN:-}
+      CRON_SCHEDULE_MIN: ${CRON_SCHEDULE_MIN:-}
+      # Single Puma process (no WEB_CONCURRENCY) with a 5-thread pool; the four
+      # SQLite databases each size their connection pool to RAILS_MAX_THREADS.
+      RAILS_MAX_THREADS: "5"
+    volumes:
+      # Persist all four SQLite databases (+ WAL/SHM) across restarts.
+      # Linux host first run: mkdir -p storage && sudo chown -R 1000:1000 storage
+      - ./storage:/rails/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s

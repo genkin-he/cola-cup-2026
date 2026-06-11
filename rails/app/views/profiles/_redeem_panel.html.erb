@@ -1,0 +1,26 @@
+<div id="redeem_panel" class="redeem">
+  <% Drink::ALL.each do |drink| %>
+    <%= form_with url: redemptions_path, method: :post, class: "rdrink",
+                  data: { controller: "qty-stepper", qty_stepper_cost_value: drink.cost,
+                          qty_stepper_balance_value: balance } do |form| %>
+      <span class="em"><%= drink.emoji %></span>
+      <span class="meta">
+        <div class="dn"><%= drink.name %></div>
+        <div class="price"><%= format_credits(drink.cost) %> 额度 / 瓶</div>
+      </span>
+      <span class="stepper">
+        <button type="button" data-action="qty-stepper#dec" data-qty-stepper-target="dec" aria-label="减少">−</button>
+        <b data-qty-stepper-target="qty">1</b>
+        <button type="button" data-action="qty-stepper#inc" aria-label="增加">＋</button>
+      </span>
+      <%= form.hidden_field :drink, value: drink.key %>
+      <%= form.hidden_field :qty, value: 1, data: { qty_stepper_target: "qtyInput" } %>
+      <button type="submit" class="rbtn" data-qty-stepper-target="submit">兑换 · <%= format_credits(drink.cost) %></button>
+    <% end %>
+  <% end %>
+
+  <% if local_assigns[:error].present? %>
+    <p class="formerror"><%= error %></p>
+  <% end %>
+  <p class="redeem-hint">兑换后自动扣额度，线下凭记录领饮料。额度不足时按钮不可点。</p>
+</div>

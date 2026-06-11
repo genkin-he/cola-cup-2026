@@ -1,0 +1,23 @@
+<% big = match_card_big(match, tally, market) %>
+<div class="big" id="match_card_big_<%= match.id %>">
+  <% case big[:kind] %>
+  <% when :result %>
+    <div class="pct score"><%= big[:label] %></div>
+    <div class="cap"><%= big[:cap] %></div>
+  <% when :market %>
+    <div class="srclbl">市场·<%= big[:short] %></div>
+    <div class="pct"><%= big[:pct] %>%</div>
+    <% if (dv = big[:divergence]) %>
+      <div class="dv hot <%= dv[:tone] %>">
+        <span class="spark" data-tip="<%= MatchesHelper::DIVERGENCE_TIP %>" tabindex="0" role="button" aria-label="分歧说明">⚡</span>
+        <%= dv[:text] %>
+      </div>
+    <% end %>
+  <% when :crowd %>
+    <div class="srclbl cr">同事·<%= big[:short] %></div>
+    <div class="pct"><%= big[:pct] %>%</div>
+    <div class="cap"><%= big[:cap] %></div>
+  <% else %>
+    <div class="cap">暂无赔率</div>
+  <% end %>
+</div>

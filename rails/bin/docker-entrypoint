@@ -1,0 +1,25 @@
+#!/bin/bash -e
+
+# Disable the built-in recurring scheduler when asked. SOLID_QUEUE_SKIP_RECURRING
+# is the official Solid Queue switch that stops config/recurring.yml from being
+# loaded, so the in-Puma supervisor (SOLID_QUEUE_IN_PUMA=true) runs jobs on
+# demand only. Mirrors the old container's RUN_SCHEDULER=false behaviour.
+if [ "${RUN_SCHEDULER}" = "false" ]; then
+  export SOLID_QUEUE_SKIP_RECURRING=true
+fi
+
+# When starting the Rails server, prepare the database and seed an empty one.
+if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+  # Creates the four SQLite databases (primary/cache/queue/cable) on first boot,
+  # or runs pending migrations on subsequent boots. Idempotent.
+  ./bin/rails db:prepare
+
+  # First boot on an empty volume: load the 104-fixture schedule + 48 teams.
+  # A seed failure must not block the web server — the schedule can be imported
+  # later via `bin/rails cup:import_schedule`.
+  if ./bin/rails runner 'exit(Match.none? ? 0 : 1)'; then
+    ./bin/rails db:seed || echo "[entrypoint] db:seed failed — import the schedule later with cup:import_schedule"
+  fi
+fi
+
+exec "${@}"
