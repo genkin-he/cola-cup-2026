@@ -7,9 +7,9 @@ export type VoteDelta = VoteRow & { d_used: number; won: number; delta: number }
 /**
  * Pari-mutuel payout (pure, no writes): each loser forfeits exactly their stake
  * into the pool; the winners split that pool in proportion to their stake. The
- * batch is zero-sum, so total winnings can never exceed the pool — the house
- * never subsidises (it only keeps the floored remainder). d_used is the implied
- * pool decimal for the bettor's own pick (total pool ÷ that pick's stake).
+ * batch is zero-sum — winners' gains exactly equal losers' stakes, the house
+ * takes nothing. d_used is the implied pool decimal for the bettor's own pick
+ * (total pool ÷ that pick's stake).
  */
 export function deltasFromVotes(votes: VoteRow[], result: Pick): VoteDelta[] {
   const total = votes.reduce((sum, v) => sum + v.stake, 0);

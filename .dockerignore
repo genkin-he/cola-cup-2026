@@ -1,6 +1,6 @@
 node_modules
 .git
-node/data
+nextjs/data
 .cf-assets
 *.log
 .env*.local

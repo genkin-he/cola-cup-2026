@@ -1,4 +1,4 @@
-# 🥤 Cup — 2026 世界杯可乐竞猜平台
+# 🥤 Cola Cup 2026 — 世界杯可乐竞猜平台（Next.js 版）
 
 同事之间"根据 Polymarket 赔率赌可口可乐"的内部竞猜小工具。赛前给球队投票下注，
 赛后用 **Polymarket 市场赔率**结算每个人该买/该收多少瓶可乐，并维护排行榜。
@@ -6,7 +6,7 @@
 - **赛程**：2026 世界杯全部 104 场（数据源 [openfootball](https://github.com/openfootball/worldcup.json)）。
 - **赔率**：从 [Polymarket](https://polymarket.com) 抓取单场胜平负市场（小组赛 3-way / 淘汰赛 2-way）。
 - **两种赔率**：Polymarket 市场赔率（真实结算）+ 群众投票赔率（仅对比展示"群众 vs 市场"）。
-- **结算**：押中 `+下注瓶数 × (赔率−1)`，押错 `−下注瓶数`；累计净额四舍五入为应买瓶数（如 −1.5 → 买 2 瓶）。
+- **结算**：帕里-玛图尔分池——押错失去本注，押中按注额比例瓜分输家的注（零和、平台不抽水）；账本存精确小数，零头跨场累计。
 
 ## 技术栈
 
@@ -61,7 +61,7 @@ docker compose up -d --build
 
 ```bash
 docker compose exec app npm run fetch:odds      # 手动刷新 Polymarket 赔率
-docker compose exec app npm run sync:results    # 手动同步 football-data 比分并结算
+docker compose exec app npm run sync:results    # 手动同步 football-data 比分（不结算）
 docker compose exec app npm run lock:snapshots  # 锁定已开赛比赛的赔率快照
 docker compose logs -f app                      # 看日志
 ```
@@ -71,7 +71,7 @@ docker compose logs -f app                      # 看日志
 | 任务 | 默认间隔 | 覆盖变量 | 说明 |
 |---|---|---|---|
 | 赔率 `odds` | 60 分钟 | `CRON_ODDS_MIN` | 拉 Polymarket 概率（仅对比展示，带 UA / 退避防限流） |
-| 比分 `results` | 15 分钟 | `CRON_RESULTS_MIN` | 拉 football-data 已结束比赛，自动结算未结算的场次 |
+| 比分 `results` | 15 分钟 | `CRON_RESULTS_MIN` | 拉 football-data 已结束比赛，仅录入比分**不自动结算** |
 | 赛程 `schedule` | 1440 分钟 | `CRON_SCHEDULE_MIN` | 重导赛程（淘汰赛对阵确定后原地更新） |
 
 把 `RUN_SCHEDULER` 设为 `false` 可关掉内置调度，改用宿主机 cron 调上面的运维命令。
@@ -79,8 +79,8 @@ docker compose logs -f app                      # 看日志
 > 群众赔率无需单独的锁盘定时任务：投票在开赛前 1 小时自动截止，结算时按当时（已固定）的投票分布定格作为结算依据。
 
 > **赔率同步**：每小时一次（Polymarket 概率，仅展示）。
-> **比赛结果**：默认由 **football-data.org 自动同步**比分并结算；结算账号也可在 `/admin` 手动录入或**修正比分**（不配 `FOOTBALL_DATA_API_KEY` 则纯手动）。
-> **结算赔率**：用**群众投票赔率**（开赛前 1 小时锁定的投票分布），Polymarket 仅作对比。
+> **比赛结果**：默认由 **football-data.org 自动同步**比分（只录比分不结算）；结算账号也可在 `/admin` 手动录入或**修正比分**（不配 `FOOTBALL_DATA_API_KEY` 则纯手动）。
+> **结算方式**：结算账号在 `/admin` 手动发起，按参与者投票分布**帕里-玛图尔现算**，Polymarket 仅作对比。
 
 ## 结算后台
 
@@ -88,19 +88,20 @@ docker compose logs -f app                      # 看日志
 
 结算分两阶段：
 
-- **录入结果**（线上）：比分默认由 football-data 自动同步并结算；也可手动选胜/平/负 + 比分，或对已结算比赛**修正比分**。按锁定的投票赔率写入账本、更新排名。
+- **录入结果**（线上）：比分默认由 football-data 自动同步；也可手动选胜/平/负 + 比分，或对已结算比赛**修正比分**。勾选待结算比赛发起结算后，按分池 delta 写入账本、更新排名。
 - **补录赔率**：Polymarket 未开盘的场次，可手动录入 0–1 概率作为结算依据。
-- **线下结算可乐**：「可乐总账」按人汇总应买/应收 + 平台可乐池，每场还显示群众赔率与逐人应交/应收；线下收发后点「🥤 标记可乐已结清」或「✅ 全部平账」。`/me` 与排行榜据此区分「待结/已结清」，净瓶数（战绩）不变。
+- **线下结算可乐**：「可乐总账」按人汇总应买/应收（零和，无平台池），每场还显示群众赔率与逐人应交/应收；线下收发后点「🥤 标记可乐已结清」或「✅ 全部平账」。`/me` 与排行榜据此区分「待结/已结清」，净瓶数（战绩）不变。
 
 ## 玩法说明
 
 1. 用 X（Twitter）账号登录（强制），自动带入头像和昵称；在 `/identity` 可改昵称、可用 emoji 覆盖头像。
-2. 在赛程页选一场**有盘口**的比赛 → 押 主胜/平/客胜（淘汰赛只有胜/负）+ 下注瓶数（0.5/1/2），开赛前可改票。
-3. 开赛锁盘 → 结算账号录入结果 → 自动结算 → 线下收发可乐后标记结清。
-4. `/leaderboard` 看排名，`/me` 看个人账本与应买可乐瓶数。
+2. 在赛程页选一场**有盘口**的比赛 → 押 主胜/平/客胜（淘汰赛只有胜/负），**注额按阶段固定**（小组赛 1 瓶、32/16/8 强 2 瓶、半决赛及之后 5 瓶），开赛前 1 小时锁盘，锁盘前可改票。
+3. 锁盘 → 录入结果（自动同步或手动）→ 结算账号在 `/admin` 发起结算 → 线下收发可乐后标记结清。
+4. `/leaderboard` 看排名，`/me` 看个人账本，余额可在「我的」页面兑换饮料（可乐 1 / 各种茶、外星人 1.5 / 红牛 2.5 额度一瓶）。
 
 ## 数据模型
 
 `users` 身份 · `teams` 球队（英文名供匹配 + 中文名展示）· `matches` 104 场 ·
 `poly_markets` Polymarket 市场映射 · `odds_snapshot` 赔率快照（含开赛锁定） ·
-`votes` 投票 · `ledger` 结算账本（存未取整净额，排名时再四舍五入）。
+`votes` 投票 · `ledger` 结算账本（存精确小数 delta，零和，余额 = `SUM(delta)`）·
+`settlements` 结算批次 · `redemptions` 饮料兑换。

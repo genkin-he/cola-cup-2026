@@ -5,13 +5,14 @@ build/
 .cf-assets/
 
 # SQLite database (local data, do not commit)
-node/data/backups/*
-node/data/*.db
-node/data/*.db-wal
-node/data/*.db-shm
+nextjs/data/backups/*
+nextjs/data/*.db
+nextjs/data/*.db-wal
+nextjs/data/*.db-shm
 
 # Local env
 .env*.local
+nextjs/.env
 
 # Misc
 .DS_Store
