@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../../app/models/auth_providers"
+
 # Assuming you have not yet modified this file, each configuration option below
 # is set to its default value. Note that some are commented out while others
 # are not: uncommented lines are intended to protect your configuration from
@@ -276,12 +278,32 @@ Devise.setup do |config|
   # Add a new OmniAuth provider. Check the wiki for more information on setting
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
-  # Twitter (X) OAuth 2.0 only — no password entry. The omniauth-twitter2 strategy
-  # already requests profile_image_url in its user.fields, so auth.info.image is
-  # populated (no raw_info override needed). Env var names match the legacy app.
-  config.omniauth :twitter2,
-    ENV["AUTH_TWITTER_ID"], ENV["AUTH_TWITTER_SECRET"],
-    scope: "tweet.read users.read"
+  # Each provider is independently optional — presence of its key env var is the
+  # on/off switch (see AuthProviders). A deployment can run Twitter-only,
+  # OIDC-only, or both.
+  if AuthProviders.twitter_enabled?
+    # Twitter (X) OAuth 2.0 only — no password entry. omniauth-twitter2 requests
+    # profile_image_url so auth.info.image is populated.
+    config.omniauth :twitter2,
+      ENV["AUTH_TWITTER_ID"], ENV["AUTH_TWITTER_SECRET"],
+      scope: "tweet.read users.read"
+  end
+
+  # Generic OIDC via discovery (issuer -> endpoints, JWKS, nonce/state). Scope is
+  # openid+profile; we do not request or store email. redirect_uri is built from
+  # AUTH_URL, which must match the served origin and be registered at the IdP.
+  if AuthProviders.oidc_enabled?
+    config.omniauth :openid_connect,
+      name: :openid_connect,
+      issuer: ENV["OIDC_ISSUER"],
+      discovery: true,
+      scope: [ :openid, :profile ],
+      client_options: {
+        identifier: ENV["OIDC_CLIENT_ID"],
+        secret: ENV["OIDC_CLIENT_SECRET"],
+        redirect_uri: "#{ENV['AUTH_URL']}/users/auth/openid_connect/callback"
+      }
+  end
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
