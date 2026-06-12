@@ -36,6 +36,7 @@ export default class extends Controller {
     }
 
     const unchanged = this.selected !== "" && this.selected === this.confirmedValue
+    const actionable = this.selected !== "" && !unchanged
     if (!this.selected) {
       this.submitTarget.textContent = "🥤 选个看好的"
     } else if (unchanged) {
@@ -44,7 +45,10 @@ export default class extends Controller {
       this.submitTarget.textContent = `🥤 提交预测 · ${label} · ${this.bottles(this.stakeValue)} 瓶`
     }
     this.submitTarget.style.fontSize = this.ctaFontSize(label)
-    this.submitTarget.disabled = !this.selected || unchanged
+    // Red fill only for a submittable change; the "already predicted" / "pick one"
+    // states stay a calm outline so they don't dominate the panel.
+    this.submitTarget.classList.toggle("outline", !actionable)
+    this.submitTarget.disabled = !actionable
   }
 
   // Shrink the full-width CTA for long country names so it stays on one line

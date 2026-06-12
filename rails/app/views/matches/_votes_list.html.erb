@@ -2,9 +2,9 @@
 <% tag_class = { "home" => "tag h", "draw" => "tag d", "away" => "tag a" } %>
 <div class="voters" id="votes_list_<%= match.id %>">
   <hr class="rule" style="margin-top: 24px">
-  <h3 class="disp" style="padding-top: 18px">
+  <h2 class="disp" style="padding-top: 18px">
     同事预测 · <%= votes.size %> 人
-  </h3>
+  </h2>
   <hr class="rule">
   <% if votes.empty? %>
     <p style="padding: 20px 0; color: var(--low); font-size: 13px">
@@ -22,7 +22,6 @@
           <span class="<%= won ? "res w" : "res l" %>"><%= won ? "✓" : "✗" %></span>
         <% end %>
       </div>
-      <hr class="rule">
     <% end %>
   <% end %>
 </div>

@@ -72,6 +72,13 @@ module FormatHelper
     to_fixed(number, 2)
   end
 
+  # Odds-snapshot timestamp, e.g. "6/13 08:00" — the date keeps a stale market
+  # line honest, no weekday so it stays tag-sized.
+  def format_snapshot_time(time)
+    t = in_display_zone(time)
+    "#{t.month}/#{t.day} #{t.strftime('%H:%M')}"
+  end
+
   # Beijing date + time (no weekday) for the rate-limit reset, e.g. "6月11日 11:00".
   def format_reset_time(epoch_seconds)
     t = Time.zone.at(epoch_seconds.to_i).in_time_zone(DISPLAY_TIME_ZONE)

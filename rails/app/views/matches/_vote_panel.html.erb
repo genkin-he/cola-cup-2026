@@ -55,8 +55,9 @@
 
         <% if error %><p class="formerror"><%= error %></p><% end %>
 
-        <%# Disabled until the picker selects something other than the saved pick. %>
-        <button type="submit" class="cta" data-vote-panel-target="submit" disabled>
+        <%# Outline + disabled until the picker selects something other than the
+            saved pick; vote-panel#render flips it to the red fill when actionable. %>
+        <button type="submit" class="cta outline" data-vote-panel-target="submit" disabled>
           <%= current_pick ? "✅ 当前已预测 #{pick_team_label(match, current_pick)}" : "🥤 选个看好的" %>
         </button>
       <% end %>

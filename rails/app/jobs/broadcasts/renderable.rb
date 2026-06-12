@@ -12,8 +12,7 @@ module Broadcasts
     end
 
     def broadcast_odds_compare(match)
-      tally = match.vote_tally
-      vote_odds = VoteOdds.from_tally(tally, allows_draw: match.allows_draw?)
+      vote_odds = match.current_vote_odds
       market = market_snapshot(match)
       Turbo::StreamsChannel.broadcast_replace_to(
         "match", match,
@@ -22,9 +21,9 @@ module Broadcasts
         locals: {
           match: match,
           outcomes: ApplicationController.helpers.match_outcomes(match, market, vote_odds),
-          crowd_total: tally.voters,
           low_sample: vote_odds&.low_sample?,
-          polymarket_url: polymarket_url(match)
+          polymarket_url: polymarket_url(match),
+          market_snapshot: market
         }
       )
     end

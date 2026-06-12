@@ -334,7 +334,12 @@ main {
   grid-template-columns: 1fr auto;
   gap: 10px 18px;
   align-items: center;
-  padding: 18px 0 17px;
+  /* Horizontal padding pulled back by an equal negative margin: the hover
+     highlight gets inner breathing room while the row content stays aligned
+     with the day labels and divider rules at the shell gutter. */
+  padding: 18px 14px 17px;
+  margin-inline: -14px;
+  border-radius: 12px;
   cursor: pointer;
   transition: background 0.15s ease;
   color: inherit;
@@ -730,96 +735,38 @@ main {
   font-family: var(--disp);
   font-weight: 900;
   font-size: 30px;
-  margin: 0 0 4px;
+  margin: 0 0 12px;
 }
-.oc .oc-note {
-  font-size: 13.5px;
-  color: var(--mid);
-  line-height: 1.55;
-  padding: 6px 0 16px;
-}
-.oc .oc-note b.mk {
-  color: var(--market);
-  font-weight: 600;
-}
-.oc .oc-note b.cr {
-  color: var(--crowd);
-  font-weight: 600;
-}
-.oc .bar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 0 0 8px;
-}
-.oc .legend {
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-}
-.oc .legend .lg {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--mid);
-  white-space: nowrap;
-}
-.oc .legend .lg i {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-.oc .legend .lg i.cr {
-  background: var(--crowd);
-}
-.oc .legend .lg i.mk {
-  background: var(--market);
-}
-.oc .legend .lg .lg-tag {
-  font-size: 11px;
-  border-radius: 999px;
-  padding: 1px 7px;
-  margin-left: 1px;
-}
-.oc .legend .lg .lg-tag.warn {
-  color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 15%, transparent);
-}
-.oc .legend .lg .lg-tag.info {
+.oc .oc-foot {
+  font-size: 13px;
   color: var(--low);
-  background: color-mix(in srgb, var(--low) 15%, transparent);
+  line-height: 1.55;
+  padding: 14px 0 0;
 }
+/* Plain text link inside the footnote (no button chrome). */
 .oc .market-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   color: var(--market);
-  font-size: 12.5px;
-  border: 1px solid color-mix(in srgb, var(--market) 40%, transparent);
-  border-radius: 999px;
-  padding: 6px 12px;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
   white-space: nowrap;
 }
 .oc .market-link:hover {
-  background: color-mix(in srgb, var(--market) 14%, transparent);
-  border-color: var(--market);
+  text-decoration: underline;
 }
 .oc .market-link .arrow {
-  font-size: 13px;
+  font-size: 12px;
 }
 
-/* unified three-outcome comparison — every result shows market + crowd */
+/* unified three-outcome comparison — every result shows market + crowd;
+   a hairline above each outcome (incl. the first, under the title), none
+   below the last so the footnote isn't boxed in */
 .odds-out {
   padding: 18px 0 17px;
   border-top: 1px solid var(--border);
 }
-.odds-out:last-of-type {
-  border-bottom: 1px solid var(--border);
+.odds-out:first-of-type {
+  padding-top: 26px;
 }
 .odds-out.featured {
   padding: 20px 0 19px;
@@ -1024,7 +971,9 @@ main {
   justify-content: center;
   min-height: 58px;
   margin-top: 16px;
-  border: 0;
+  /* Both states carry the same 2px border (transparent when filled) so toggling
+     to the outline state can't change the button's box height and jitter. */
+  border: 2px solid transparent;
   background: var(--red);
   color: #fff;
   font-family: var(--disp);
@@ -1047,7 +996,14 @@ main {
 .cta.outline {
   background: transparent;
   color: var(--hi);
-  border: 2px solid var(--ink);
+  border-color: var(--ink);
+}
+/* The outline state is the non-actionable "已预测 / 选个看好的" status — keep it
+   crisp (not faded like a normal disabled button) so it reads as a calm chip. */
+.cta.outline:disabled {
+  filter: none;
+  opacity: 1;
+  cursor: default;
 }
 .vp .changenote {
   text-align: center;
@@ -1142,10 +1098,11 @@ main {
 .voters {
   padding: 24px 0 4px;
 }
-.voters h3 {
+/* Same heading rank as 赔率对比 (.oc h2) and 你看好谁 (.vp h2). */
+.voters h2 {
   font-family: var(--disp);
-  font-weight: 800;
-  font-size: 22px;
+  font-weight: 900;
+  font-size: 30px;
   margin: 0 0 6px;
 }
 .vrow {
@@ -1154,6 +1111,7 @@ main {
   gap: 12px;
   padding: 13px 0;
   font-size: 14px;
+  border-bottom: 1px solid var(--border);
 }
 .vrow .em {
   font-size: 22px;
@@ -1864,17 +1822,33 @@ main {
   flex-direction: column;
 }
 
-/* two-column on wide screens — odds left, vote right (source order) */
+/* Wide screens: odds + roster fill the left track, the vote panel owns a
+   sticky right rail spanning both rows (mobile keeps the source order). */
 @media (min-width: 720px) {
   .detail-cols {
     display: grid;
     grid-template-columns: 1fr 300px;
-    gap: 40px;
+    grid-template-areas:
+      "odds vote"
+      "roster vote";
+    gap: 0 40px;
     align-items: start;
   }
-  .detail-cols .right {
+  .dc-odds {
+    grid-area: odds;
+  }
+  .dc-vote {
+    grid-area: vote;
     position: sticky;
     top: 80px;
+  }
+  /* Align 你看好谁 with 赔率对比: the panel's 24px stacking gap is only needed
+     when the columns collapse on mobile; match .oc's 8px top padding here. */
+  .dc-vote .vp {
+    padding-top: 8px;
+  }
+  .dc-roster {
+    grid-area: roster;
   }
 }
 

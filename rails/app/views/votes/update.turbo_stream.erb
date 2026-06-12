@@ -5,8 +5,9 @@
 <% end %>
 <%= turbo_stream.replace "odds_compare_#{@match.id}" do %>
   <%= render "matches/odds_compare",
-        match: @match, outcomes: @outcomes, crowd_total: @tally.voters,
-        low_sample: @vote_odds&.low_sample?, polymarket_url: @polymarket_url %>
+        match: @match, outcomes: @outcomes,
+        low_sample: @vote_odds&.low_sample?, polymarket_url: @polymarket_url,
+        market_snapshot: @market_odds %>
 <% end %>
 <%= turbo_stream.replace "votes_list_#{@match.id}" do %>
   <%= render "matches/votes_list", match: @match, votes: @votes %>

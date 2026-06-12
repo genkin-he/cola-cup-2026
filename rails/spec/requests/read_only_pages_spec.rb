@@ -24,6 +24,22 @@ RSpec.describe "Read-only pages", type: :request do
       expect(response.body).to include("赔率对比", "同事预测")
       expect(response.body).to include("odds_compare_#{match.id}", "votes_list_#{match.id}")
     end
+
+    it "stamps an unlocked market line with its snapshot time" do
+      match = create(:match)
+      create(:odds_snapshot, match: match, source: "polymarket",
+             taken_at: Time.utc(2026, 6, 13, 0, 0)) # 08:00 Beijing
+      get match_path(match)
+      expect(response.body).to include("更新于 6/13 08:00")
+    end
+
+    it "stamps a locked market line with its freeze time" do
+      match = create(:match)
+      create(:odds_snapshot, match: match, source: "polymarket", locked: true,
+             taken_at: Time.utc(2026, 6, 13, 0, 0))
+      get match_path(match)
+      expect(response.body).to include("锁定于 6/13 08:00")
+    end
   end
 
   describe "GET /leaderboard" do

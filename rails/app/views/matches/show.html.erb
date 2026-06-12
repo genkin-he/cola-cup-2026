@@ -27,16 +27,23 @@
   </div>
   <hr class="rule">
 
+  <%# Source order doubles as the mobile stacking order: vote -> odds -> roster
+      (the vote panel is the page's primary action, so it gets the first screen).
+      Desktop grid-areas put the sticky vote panel in the right rail and let the
+      roster spread under the odds (see .detail-cols). %>
   <div class="detail-cols">
-    <div class="left">
-      <%= render "matches/odds_compare",
-            match: @match, outcomes: @outcomes, crowd_total: @tally.voters,
-            low_sample: @vote_odds&.low_sample?, polymarket_url: @polymarket_url %>
-    </div>
-    <div class="right">
+    <div class="dc-vote">
       <%= render "matches/vote_panel",
             match: @match, status: status, user_vote: @user_vote,
             next_match_id: @next_match_id, tally: @tally %>
+    </div>
+    <div class="dc-odds">
+      <%= render "matches/odds_compare",
+            match: @match, outcomes: @outcomes,
+            low_sample: @vote_odds&.low_sample?, polymarket_url: @polymarket_url,
+            market_snapshot: @market_odds %>
+    </div>
+    <div class="dc-roster">
       <%= render "matches/votes_list", match: @match, votes: @votes %>
     </div>
   </div>
