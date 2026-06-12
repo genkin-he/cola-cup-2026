@@ -1,16 +1,26 @@
 # Cup 2026 (Rails) — deploy helpers
 #
-# Single-container production deploy via docker compose: Thruster serves the
-# precompiled assets itself, so unlike the old Next.js stack there is no CDN
-# step — publish is just rebuild + restart. SQLite data lives on the ./storage
-# volume and survives container rebuilds; pending migrations run automatically
-# on boot (entrypoint db:prepare).
+# Single-container production deploy via docker compose, with hashed assets
+# (js/css/fonts) offloaded to Cloudflare Pages like the old Next.js stack:
+#   make deploy   — build image, extract /assets, push to Pages CDN
+#   make publish  — deploy assets first, then restart on the SAME build
+#                   (HTML digests must match what's already on the CDN)
+# Requires a logged-in wrangler (or CLOUDFLARE_API_TOKEN) and in .env:
+#   ASSET_HOST=https://cup-assets.pages.dev
+# SQLite data lives on the ./storage volume and survives rebuilds; pending
+# migrations run automatically on boot (entrypoint db:prepare).
 
-.PHONY: publish build up status logs console restart
+ASSET_PROJECT ?= cup-assets
 
-# Rebuild the image with the latest code and restart the container.
-publish:
-	docker compose build
+.PHONY: deploy publish build up status logs console restart
+
+# Build + push static assets to Cloudflare Pages. Run after every code change.
+deploy:
+	ASSET_PROJECT=$(ASSET_PROJECT) bin/deploy-assets
+
+# Push assets to the CDN, then restart the container with the matching image
+# (deploy already built it — no rebuild here, hashes must stay in sync).
+publish: deploy
 	docker compose up -d
 	@sleep 5
 	@$(MAKE) --no-print-directory status

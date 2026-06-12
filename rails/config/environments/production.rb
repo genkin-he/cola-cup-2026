@@ -18,8 +18,9 @@ Rails.application.configure do
   # Cache assets for far-future expiry since they are all digest stamped.
   config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
 
-  # Enable serving of images, stylesheets, and JavaScripts from an asset server.
-  # config.asset_host = "http://assets.example.com"
+  # Serve hashed assets (js/css/fonts) from the Cloudflare Pages CDN when set,
+  # e.g. ASSET_HOST=https://cup-assets.pages.dev (deployed via bin/deploy-assets).
+  config.asset_host = ENV["ASSET_HOST"].presence
 
   # Deployment is plain http inside a Tailscale network (optionally fronted by
   # `tailscale serve` for TLS). force_ssl would redirect-loop the http path, so

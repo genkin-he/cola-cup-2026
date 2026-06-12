@@ -1,11 +1,28 @@
-// Import and register all your controllers from the importmap via controllers/**/*_controller
-//
-// IMPORTANT: do NOT run `bin/rails stimulus:manifest:update`. With propshaft's
-// digested assets, the manifest it generates uses RELATIVE imports
-// (`import X from "./foo_controller"`) which bypass the importmap and 404 — that
-// silently breaks Stimulus app-wide. eagerLoadControllersFrom resolves the
-// bare `controllers/*` specifiers through the importmap and auto-registers every
-// controller, so new controllers need no edits here.
-import { application } from "controllers/application"
-import { eagerLoadControllersFrom } from "@hotwired/stimulus-loading"
-eagerLoadControllersFrom("controllers", application)
+// Explicit controller registry. esbuild bundles everything imported here —
+// when adding a controller, import and register it below (the old importmap
+// eagerLoadControllersFrom auto-discovery is gone).
+import { application } from "./application"
+
+import AdminTabsController from "./admin_tabs_controller"
+import CountdownController from "./countdown_controller"
+import EmojiPickerController from "./emoji_picker_controller"
+import HelloController from "./hello_controller"
+import HighlightMeController from "./highlight_me_controller"
+import PreviewSheetController from "./preview_sheet_controller"
+import QtyStepperController from "./qty_stepper_controller"
+import ScheduleFilterController from "./schedule_filter_controller"
+import ScoreFormController from "./score_form_controller"
+import SettleSelectController from "./settle_select_controller"
+import VotePanelController from "./vote_panel_controller"
+
+application.register("admin-tabs", AdminTabsController)
+application.register("countdown", CountdownController)
+application.register("emoji-picker", EmojiPickerController)
+application.register("hello", HelloController)
+application.register("highlight-me", HighlightMeController)
+application.register("preview-sheet", PreviewSheetController)
+application.register("qty-stepper", QtyStepperController)
+application.register("schedule-filter", ScheduleFilterController)
+application.register("score-form", ScoreFormController)
+application.register("settle-select", SettleSelectController)
+application.register("vote-panel", VotePanelController)

@@ -561,9 +561,9 @@ main {
   color: var(--win);
 }
 /* 焦点大战 mark: bare flame, meaning in the hover tooltip */
-.mrow .meta .focus-mark {
+.mrow .teams .focus-mark {
   position: relative;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1;
   cursor: help;
   outline: none;
@@ -593,7 +593,7 @@ main {
     box-shadow: 0 0 0 0 transparent;
   }
 }
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]::after {
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]::after {
   content: attr(data-tip);
   position: absolute;
   bottom: calc(100% + 8px);
@@ -616,7 +616,7 @@ main {
     transform 0.16s ease;
   z-index: 60;
 }
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]::before {
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]::before {
   content: "";
   position: absolute;
   bottom: calc(100% + 2px);
@@ -628,13 +628,13 @@ main {
   pointer-events: none;
   z-index: 60;
 }
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:hover::after,
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:focus::after {
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:hover::after,
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:focus::after {
   opacity: 1;
   transform: translateY(0);
 }
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:hover::before,
-.mrow .meta :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:focus::before {
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:hover::before,
+.mrow :is(.todo-mark, .live-mark, .focus-mark)[data-tip]:focus::before {
   opacity: 1;
 }
 

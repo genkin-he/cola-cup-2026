@@ -1,0 +1,30 @@
+#!/bin/bash
+# Push the current image's precompiled assets to Cloudflare Pages (CDN).
+#
+# Flow (mirrors the legacy nextjs/Makefile `deploy` target):
+#   1. docker compose build       — image precompiles /rails/public/assets
+#   2. extract that assets dir    — digests must match what the app will serve
+#   3. stage with a _headers file — CORS (module scripts & fonts) + 1y cache
+#   4. wrangler pages deploy      — goes live on https://<project>.pages.dev
+#
+# Run this BEFORE `docker compose up -d` so the CDN already has the new hashed
+# files when the restarted app starts referencing them. Requires a logged-in
+# wrangler (`wrangler login`) or CLOUDFLARE_API_TOKEN.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+ASSET_PROJECT="${ASSET_PROJECT:-cup-assets}"
+STAGE=".cf-assets"
+
+docker compose build app
+
+container_id=$(docker create cup)
+trap 'docker rm -f "$container_id" >/dev/null' EXIT
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+docker cp "$container_id":/rails/public/assets "$STAGE/assets"
+
+printf '/assets/*\n  Access-Control-Allow-Origin: *\n  Cache-Control: public, max-age=31536000, immutable\n' > "$STAGE/_headers"
+
+npx wrangler pages deploy "$STAGE" --project-name "$ASSET_PROJECT"
+echo "✅ assets live on https://${ASSET_PROJECT}.pages.dev — now: docker compose up -d"

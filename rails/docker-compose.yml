@@ -48,6 +48,9 @@ services:
       # Single Puma process (no WEB_CONCURRENCY) with a 5-thread pool; the four
       # SQLite databases each size their connection pool to RAILS_MAX_THREADS.
       RAILS_MAX_THREADS: "5"
+      # CDN origin for hashed assets (blank → serve locally). Push the matching
+      # build's assets with bin/deploy-assets BEFORE restarting the container.
+      ASSET_HOST: ${ASSET_HOST:-}
     volumes:
       # Persist all four SQLite databases (+ WAL/SHM) across restarts.
       # Linux host first run: mkdir -p storage && sudo chown -R 1000:1000 storage
