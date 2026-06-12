@@ -62,6 +62,8 @@ RSpec.describe "Read-only pages", type: :request do
 
   describe "GET /identity" do
     it "shows the sign-in button when anonymous" do
+      allow(AuthProviders).to receive(:twitter_enabled?).and_return(true)
+      allow(AuthProviders).to receive(:any_enabled?).and_return(true)
       get identity_path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("参与竞猜", "/users/auth/twitter2")
