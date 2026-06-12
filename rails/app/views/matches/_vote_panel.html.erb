@@ -19,8 +19,9 @@
   <% else %>
     <% picks = match.valid_picks %>
     <% current_pick = user_vote&.pick %>
-    <% decimal = current_pick ? vote_odds&.public_send("d_#{current_pick}") : nil %>
-    <% potential = (decimal && decimal.finite? && decimal > 0) ? match.stake * (decimal - 1) : nil %>
+    <% preview_odds = preview_odds_by_pick(match, tally, current_pick) %>
+    <% decimal = current_pick ? preview_odds[current_pick] : nil %>
+    <% potential = (decimal && decimal.finite?) ? match.stake * (decimal - 1) : nil %>
     <div data-controller="vote-panel countdown"
          data-vote-panel-stake-value="<%= match.stake %>"
          data-vote-panel-confirmed-value="<%= current_pick %>"
@@ -30,11 +31,13 @@
         <%= hidden_field_tag :pick, current_pick, data: { vote_panel_target: "pickInput" } %>
         <div class="picks<%= " two" if picks.size == 2 %>">
           <% picks.each do |key| %>
+            <% label = pick_team_label(match, key) %>
             <button type="button" class="p<%= " sel" if current_pick == key %>"
+                    style="font-size: <%= pick_label_font_px(label) %>px"
                     data-vote-panel-target="pick" data-pick="<%= key %>"
-                    data-odds="<%= vote_odds&.public_send("d_#{key}") %>"
-                    data-label="<%= pick_team_label(match, key) %>"
-                    data-action="vote-panel#select"><%= pick_team_label(match, key) %></button>
+                    data-odds="<%= preview_odds[key] %>"
+                    data-label="<%= label %>"
+                    data-action="vote-panel#select"><%= label %></button>
           <% end %>
         </div>
 
@@ -45,8 +48,6 @@
         <p class="pot" data-vote-panel-target="pot">
           <% if potential %>
             猜中约赢 <b>+<%= format("%.1f", potential) %> 瓶</b> · 按当前预测赔率
-            <br>
-            <span style="color: var(--low); font-size: 12px">零头会累计，攒满 1 瓶即可领</span>
           <% else %>
             选个看好的
           <% end %>

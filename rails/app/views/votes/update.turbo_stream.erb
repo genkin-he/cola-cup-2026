@@ -1,7 +1,7 @@
 <%= turbo_stream.replace "vote_panel_#{@match.id}" do %>
   <%= render "matches/vote_panel",
         match: @match, status: @status, user_vote: @user_vote,
-        next_match_id: @next_match_id, vote_odds: @vote_odds, error: @error %>
+        next_match_id: @next_match_id, tally: @tally, error: @error %>
 <% end %>
 <%= turbo_stream.replace "odds_compare_#{@match.id}" do %>
   <%= render "matches/odds_compare",

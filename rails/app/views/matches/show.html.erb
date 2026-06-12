@@ -36,7 +36,7 @@
     <div class="right">
       <%= render "matches/vote_panel",
             match: @match, status: status, user_vote: @user_vote,
-            next_match_id: @next_match_id, vote_odds: @vote_odds %>
+            next_match_id: @next_match_id, tally: @tally %>
       <%= render "matches/votes_list", match: @match, votes: @votes %>
     </div>
   </div>

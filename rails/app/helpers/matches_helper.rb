@@ -16,6 +16,15 @@ module MatchesHelper
   DIVERGENCE_TIP = "市场（聪明钱）与同事看法分歧大 —— 用同事赔率下注可能赢更多可乐".freeze
   GROUP_RE = /Group ([A-L])/.freeze
 
+  # Pick-button label sizing. A button is one of three equal columns, so on the
+  # narrowest phone layout its inner text is ~78px wide; a CJK glyph is roughly
+  # 1em, giving this per-button width budget. Long country names (沙特阿拉伯,
+  # 乌兹别克斯坦) shrink to stay on one line instead of wrapping and stretching
+  # the whole button row taller.
+  PICK_LABEL_MAX_FONT_PX = 20
+  PICK_LABEL_MIN_FONT_PX = 11
+  PICK_LABEL_FIT_WIDTH_PX = 78
+
   def status_badge(status, extra_class: nil)
     css, label = STATUS_BADGE.fetch(status)
     tag.span(label, class: [ "badge", css, extra_class ].compact.join(" "))
@@ -58,6 +67,31 @@ module MatchesHelper
       "#{match.home_score}–#{match.away_score}"
     else
       "VS"
+    end
+  end
+
+  # Font size (px) for a pick-button label, shrinking long names to one line.
+  def pick_label_font_px(label)
+    length = label.to_s.length
+    return PICK_LABEL_MAX_FONT_PX if length <= 4
+
+    (PICK_LABEL_FIT_WIDTH_PX / length).clamp(PICK_LABEL_MIN_FONT_PX, PICK_LABEL_MAX_FONT_PX)
+  end
+
+  # Decimal pool odds for each valid pick AS IF the current viewer's fixed stake
+  # already sat on that pick — their existing vote (if any) is moved onto the
+  # pick before the pool is divided. Raw crowd odds ignore the viewer's own
+  # stake, so a side nobody has backed yet (e.g. 平 when only 葡萄牙 has votes)
+  # shows no payout, when picking it would in fact win the existing pool. Returns
+  # pick => decimal (>= 1.0); exactly 1.0 means there's no opposing pool to win.
+  def preview_odds_by_pick(match, tally, current_pick)
+    stake = match.stake
+    viewer_in_pool = current_pick ? stake : 0.0
+    others_total = tally.stake_total - viewer_in_pool
+
+    match.valid_picks.index_with do |pick|
+      others_on_pick = tally.public_send(pick) - (current_pick == pick ? stake : 0.0)
+      (others_total + stake) / (others_on_pick + stake)
     end
   end
 

@@ -953,6 +953,7 @@ main {
   font-family: var(--disp);
   font-weight: 800;
   font-size: 20px;
+  line-height: 1.15;
   color: var(--mid);
   border-right: 2px solid var(--ink);
   cursor: pointer;
@@ -1016,6 +1017,12 @@ main {
 }
 .cta {
   width: 100%;
+  /* Fixed height + centering so shrinking the font for a long team name can't
+     change the button's height (which would jitter the layout on selection). */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
   margin-top: 16px;
   border: 0;
   background: var(--red);
@@ -1023,6 +1030,7 @@ main {
   font-family: var(--disp);
   font-weight: 800;
   font-size: 20px;
+  line-height: 1.2;
   letter-spacing: 0.03em;
   padding: 17px;
   cursor: pointer;
