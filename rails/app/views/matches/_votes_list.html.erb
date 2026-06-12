@@ -1,8 +1,7 @@
 <% show_result = match.settled? && match.result.present? %>
 <% tag_class = { "home" => "tag h", "draw" => "tag d", "away" => "tag a" } %>
 <div class="voters" id="votes_list_<%= match.id %>">
-  <hr class="rule" style="margin-top: 24px">
-  <h2 class="disp" style="padding-top: 18px">
+  <h2 class="disp">
     同事预测 · <%= votes.size %> 人
   </h2>
   <hr class="rule">

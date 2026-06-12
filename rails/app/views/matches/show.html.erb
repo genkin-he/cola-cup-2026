@@ -25,7 +25,6 @@
   <div class="detail-when">
     <%= format_kickoff(@match.kickoff_at) %><% if @match.venue.present? %><span class="venue"> · <%= @match.venue %></span><% end %>
   </div>
-  <hr class="rule">
 
   <%# Source order doubles as the mobile stacking order: vote -> odds -> roster
       (the vote panel is the page's primary action, so it gets the first screen).

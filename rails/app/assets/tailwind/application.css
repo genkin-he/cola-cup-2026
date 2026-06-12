@@ -721,21 +721,26 @@ main {
   text-align: center;
   font-size: 13px;
   color: var(--mid);
-  padding-bottom: 4px;
+  /* Sections below draw their own top hairline; this gap sits above it. */
+  padding-bottom: 16px;
 }
 .detail-when .venue {
   color: var(--low);
 }
 
 /* odds compare — giant dual numbers */
+/* Detail-page sections (.oc 赔率对比 / .vp 你看好谁 / .voters 同事预测) share
+   one header rhythm: own hairline on top -> 24px -> 30px/900 title -> 12px ->
+   content. Keep the three in lockstep when tweaking any of them. */
 .oc {
-  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  padding: 24px 0 4px;
 }
 .oc h2 {
   font-family: var(--disp);
   font-weight: 900;
   font-size: 30px;
-  margin: 0 0 22px;
+  margin: 0 0 12px;
 }
 .oc .oc-foot {
   font-size: 13px;
@@ -878,13 +883,14 @@ main {
 }
 /* vote panel */
 .vp {
+  border-top: 1px solid var(--border);
   padding: 24px 0 4px;
 }
 .vp h2 {
   font-family: var(--disp);
   font-weight: 900;
   font-size: 30px;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 .picks {
   display: grid;
@@ -1096,6 +1102,7 @@ main {
 
 /* voters list (desktop richer) */
 .voters {
+  border-top: 1px solid var(--border);
   padding: 24px 0 4px;
 }
 /* Same heading rank as 赔率对比 (.oc h2) and 你看好谁 (.vp h2). */
@@ -1103,7 +1110,7 @@ main {
   font-family: var(--disp);
   font-weight: 900;
   font-size: 30px;
-  margin: 0 0 6px;
+  margin: 0 0 12px;
 }
 .vrow {
   display: flex;
@@ -1820,6 +1827,8 @@ main {
 .detail-cols {
   display: flex;
   flex-direction: column;
+  /* Uniform 24px between stacked sections (each draws its own top hairline). */
+  gap: 24px;
 }
 
 /* Wide screens: odds + roster fill the left track, the vote panel owns a
@@ -1842,13 +1851,9 @@ main {
     position: sticky;
     top: 80px;
   }
-  /* Align 你看好谁 with 赔率对比: the panel's 24px stacking gap is only needed
-     when the columns collapse on mobile; match .oc's 8px top padding here. */
-  .dc-vote .vp {
-    padding-top: 8px;
-  }
   .dc-roster {
     grid-area: roster;
+    margin-top: 24px;
   }
 }
 
