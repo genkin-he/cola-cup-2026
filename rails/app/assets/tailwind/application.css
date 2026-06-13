@@ -1773,7 +1773,6 @@ main {
 /* ───────── user management (settler only) ───────── */
 .user-admin {
   padding: 8px 0 4px;
-  max-width: 520px;
 }
 .user-admin ul {
   list-style: none;
