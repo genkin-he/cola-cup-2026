@@ -1,13 +1,16 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Client-side schedule filtering (全部 / 仅可预测 / 已结束). Toggles row
-// visibility by match status, recomputes each day's count, hides empty days,
-// and shows the empty-state message — mirroring the legacy ScheduleTimeline.
+// Client-side schedule filtering (比赛 / 已结束). "比赛" shows today's and
+// future matches by kickoff day; "已结束" shows settled matches across all
+// days. Toggles row visibility, recomputes each day's count, hides empty days,
+// and shows the empty-state message.
 export default class extends Controller {
   static targets = ["tab", "section", "empty"]
+  static values = { today: String }
 
   connect() {
-    this.filter = "all"
+    this.filter = "matches"
+    this.apply()
   }
 
   select(event) {
@@ -19,9 +22,10 @@ export default class extends Controller {
   apply() {
     let anyVisible = false
     this.sectionTargets.forEach((section) => {
+      const dayKey = section.dataset.dayKey
       let count = 0
       section.querySelectorAll("[data-status]").forEach((row) => {
-        const show = this.matches(row.dataset.status)
+        const show = this.shouldShow(row.dataset.status, dayKey)
         row.hidden = !show
         if (show) count += 1
       })
@@ -33,9 +37,8 @@ export default class extends Controller {
     if (this.hasEmptyTarget) this.emptyTarget.hidden = anyVisible
   }
 
-  matches(status) {
-    if (this.filter === "all") return true
-    if (this.filter === "open") return status === "open"
-    return status === "settled" || status === "locked" || status === "live"
+  shouldShow(status, dayKey) {
+    if (this.filter === "done") return status === "settled"
+    return dayKey >= this.todayValue
   }
 }

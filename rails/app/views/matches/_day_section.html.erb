@@ -1,6 +1,6 @@
 <% primary, is_today = relative_day_heading(key, today_key) %>
 <% date_label = format_day_label(day_matches.first.kickoff_at) %>
-<section data-schedule-filter-target="section" data-day-key="<%= key %>">
+<section data-schedule-filter-target="section" data-day-key="<%= key %>" <%= "hidden" if key < today_key %>>
   <div class="daylabel">
     <span class="big<%= " today" if is_today %>"><%= primary || date_label %></span>
     <span class="sm"><% if primary %><%= date_label %> · <% end %><span data-schedule-filter-target="count"><%= day_matches.size %></span> 场</span>

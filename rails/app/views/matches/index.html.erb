@@ -1,7 +1,7 @@
 <% today_key = day_key(Time.current) %>
 <% grouped = @matches.group_by { |match| day_key(match.kickoff_at) } %>
 
-<section data-controller="schedule-filter">
+<section data-controller="schedule-filter" data-schedule-filter-today-value="<%= today_key %>">
   <%= turbo_stream_from "schedule" %>
   <div class="masthead">
     <h1 class="headline disp">
@@ -17,7 +17,7 @@
   <hr class="rule ink">
 
   <div class="subtabs">
-    <% [ [ "all", "全部" ], [ "open", "可预测" ], [ "done", "已结束" ] ].each_with_index do |(value, label), idx| %>
+    <% [ [ "matches", "比赛" ], [ "done", "已结束" ] ].each_with_index do |(value, label), idx| %>
       <button type="button"
               class="<%= "on" if idx.zero? %>"
               data-schedule-filter-target="tab"
