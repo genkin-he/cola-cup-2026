@@ -17,6 +17,7 @@ class RedemptionsController < ApplicationController
   private
 
   def render_personal_state(status: :ok)
+    @redeemed = current_user.redemptions.sum(:cost)
     @balance = current_user.net_balance
     @redemptions = current_user.redemptions.order(created_at: :desc, id: :desc)
     respond_to do |format|

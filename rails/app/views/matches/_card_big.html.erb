@@ -11,7 +11,9 @@
     <div class="pct"><%= big[:pct] %>%</div>
     <% if (dv = big[:divergence]) %>
       <div class="dv hot <%= dv[:tone] %>">
-        <span class="spark" data-tip="<%= MatchesHelper::DIVERGENCE_TIP %>" tabindex="0" role="button" aria-label="分歧说明">⚡</span>
+        <% if dv[:tone] == "mk" %>
+          <span class="spark" data-tip="<%= MatchesHelper::DIVERGENCE_TIP %>" tabindex="0" role="button" aria-label="分歧说明">⚡</span>
+        <% end %>
         <%= dv[:text] %>
       </div>
     <% end %>

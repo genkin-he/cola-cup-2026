@@ -5,7 +5,9 @@ class ProfilesController < ApplicationController
     @ledger = current_user.ledger_entries
       .includes(match: [ :home_team, :away_team ]).references(:match)
       .order("matches.kickoff_at DESC")
-    @balance = current_user.net_balance
+    @total = current_user.ledger_entries.sum(:delta)
+    @redeemed = current_user.redemptions.sum(:cost)
+    @balance = @total - @redeemed
     @redemptions = current_user.redemptions.order(created_at: :desc, id: :desc)
     @wins = @ledger.count(&:won)
   end

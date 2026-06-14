@@ -1,6 +1,5 @@
 <section>
   <%= turbo_stream_from current_user, "ledger" %>
-  <%= render "profiles/tabs" %>
   <div class="me">
     <div class="who">
       <span class="em"><%= current_user.emoji || "👤" %></span>
@@ -10,9 +9,19 @@
       </span>
     </div>
     <hr class="rule ink" style="margin-top: 18px">
+    <div class="balstats">
+      <div class="bstat">
+        <div class="netlbl">当前总赢分</div>
+        <div class="bv <%= @total.positive? ? "pos" : @total.negative? ? "neg" : "zero" %>"><%= format_bottles(@total) %></div>
+      </div>
+      <div class="bstat">
+        <div class="netlbl">已兑换</div>
+        <%= render "profiles/redeemed", redeemed: @redeemed %>
+      </div>
+    </div>
     <div class="netlbl">可用额度</div>
     <%= render "profiles/balance", balance: @balance %>
-    <p class="note">额度 = 累计赢得 − 已兑换，可以是负数。1 额度可兑 1 瓶可乐。</p>
+    <p class="note">可用额度 = 当前总赢分 − 已兑换，可以是负数。1 额度可兑 1 瓶可乐。</p>
   </div>
 
   <hr class="rule">
@@ -23,21 +32,8 @@
   <div class="ledh disp">结算明细</div>
   <hr class="rule">
   <% if @ledger.empty? %>
-    <p style="padding:32px 0;text-align:center;color:var(--low);font-size:13px">还没有已结算的投注</p>
+    <p style="padding:32px 0;text-align:center;color:var(--low);font-size:13px">还没有已结算的记录</p>
   <% else %>
-    <% @ledger.each do |row| %>
-      <div class="led">
-        <span class="dot <%= row.won ? "w" : "l" %>"></span>
-        <span class="info">
-          <div class="t"><%= row.match.home_team&.flag %> <%= team_display_name(row.match.home_team, row.match.home_label) %> vs <%= team_display_name(row.match.away_team, row.match.away_label) %> <%= row.match.away_team&.flag %></div>
-          <div class="m"><%= Match.stage_label(row.match.stage) %> · 看好 <%= Match.pick_label(row.pick) %></div>
-        </span>
-        <span class="d <%= row.won ? "w" : "l" %>">
-          <span class="amt"><%= row.won ? "赢" : "请" %> <%= format("%.2f", row.delta.abs) %> 🥤</span>
-          <span class="sub">押 <%= bottles_count(row.stake) %> 瓶<%= row.won ? " · 赔率 #{format('%.2f', row.d_used)}" : " · 未中" %></span>
-        </span>
-      </div>
-      <hr class="rule">
-    <% end %>
+    <%= render "profiles/ledger", ledger: @ledger %>
   <% end %>
 </section>

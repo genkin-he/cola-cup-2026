@@ -1225,7 +1225,15 @@ main {
   grid-template-columns: auto auto 1fr auto;
   align-items: center;
   gap: 16px;
-  padding: 16px 0;
+  padding: 16px 10px;
+  margin: 0 -10px;
+  border-radius: 12px;
+  transition: background 0.14s ease;
+}
+@media (hover: hover) {
+  .lr:hover {
+    background: var(--elevated);
+  }
 }
 .lr .rk {
   font-family: var(--disp);
@@ -1339,6 +1347,30 @@ main {
   color: var(--low);
   margin: 26px 0 4px;
 }
+.me .balstats {
+  display: flex;
+  gap: 44px;
+  margin-top: 20px;
+}
+.me .balstats .netlbl {
+  margin: 0 0 4px;
+}
+.me .balstats .bv {
+  font-family: var(--num);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+.me .balstats .bv.pos {
+  color: var(--win);
+}
+.me .balstats .bv.neg {
+  color: var(--loss);
+}
+.me .balstats .bv.zero {
+  color: var(--mid);
+}
 .me .huge {
   font-family: var(--disp);
   font-weight: 900;
@@ -1385,7 +1417,15 @@ main {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
-  padding: 15px 0;
+  padding: 15px 10px;
+  margin: 0 -10px;
+  border-radius: 12px;
+  transition: background 0.14s ease;
+}
+@media (hover: hover) {
+  .led:hover {
+    background: var(--elevated);
+  }
 }
 .led .dot {
   width: 9px;
@@ -1889,7 +1929,9 @@ main {
 /* ───────── mobile ───────── */
 @media (max-width: 620px) {
   body {
-    padding-bottom: 76px;
+    /* tab bar content height + the home-indicator inset the bar itself reserves,
+       so the last row clears the fixed bar on notched phones */
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .nav {
     display: none;

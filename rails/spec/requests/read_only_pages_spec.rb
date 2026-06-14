@@ -98,14 +98,17 @@ RSpec.describe "Read-only pages", type: :request do
       expect(response).to redirect_to(identity_path)
     end
 
-    it "shows balance and the settlement ledger when signed in" do
+    it "shows the balance breakdown and the settlement ledger when signed in" do
       user = create(:user, nickname: "老王", emoji: "🐯")
       match = create(:match, :settled)
       create(:ledger_entry, user: user, match: match, won: true, delta: 1.5, d_used: 2.0)
+      create(:redemption, user: user, cost: 0.5)
       sign_in user
       get me_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("可用额度", "结算明细", "+1.5")
+      expect(response.body).to include("当前总赢分", "已兑换", "可用额度", "结算明细")
+      expect(response.body).to include("+1.50") # 当前总赢分
+      expect(response.body).to include("+1.00") # 可用额度 = 1.5 − 0.5
       expect(response.body).to include(match.home_team.display_name)
     end
   end
@@ -116,7 +119,7 @@ RSpec.describe "Read-only pages", type: :request do
       sign_in user
       get me_settings_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("选个头像 emoji", "退出登录")
+      expect(response.body).to include("我的设置", "选个头像 emoji", "退出登录")
       expect(response.body).to include('name="nickname"')
     end
   end

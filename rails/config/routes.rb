@@ -12,6 +12,7 @@ Rails.application.routes.draw do
   end
 
   get "/leaderboard", to: "leaderboards#show", as: :leaderboard
+  resources :users, only: [ :show ]
   get "/me", to: "profiles#show", as: :me
   get "/me/settings", to: "profiles#edit", as: :me_settings
   patch "/me/settings", to: "profiles#update"

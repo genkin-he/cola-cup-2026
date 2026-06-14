@@ -1,0 +1,25 @@
+<section>
+  <div class="subtabs">
+    <%= link_to "← 返回排行榜", leaderboard_path %>
+  </div>
+  <div class="me">
+    <div class="who">
+      <span class="em"><%= @user.emoji || "👤" %></span>
+      <span>
+        <div class="nm disp"><%= @user.nickname %></div>
+        <div class="tag">参与 <%= @ledger.size %> 场 · 猜中 <%= @wins %></div>
+      </span>
+    </div>
+  </div>
+
+  <hr class="rule">
+  <div class="ledh disp">结算记录</div>
+  <hr class="rule">
+  <% if @ledger.empty? %>
+    <p style="padding:32px 0;text-align:center;color:var(--low);font-size:13px">TA 还没有结算记录</p>
+  <% else %>
+    <%= render "profiles/ledger", ledger: @ledger, show_miss: false %>
+  <% end %>
+
+  <%= render "profiles/redemption_records", redemptions: @redemptions %>
+</section>

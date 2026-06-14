@@ -10,7 +10,7 @@
     <% leader = i.zero? && bets > 0 %>
     <% total_class = total > 0 ? "b pos" : total < 0 ? "b neg" : "b zero" %>
     <div data-user-id="<%= entry.id %>">
-      <div class="<%= leader ? "lr leader" : "lr" %>">
+      <%= link_to user_path(entry), class: (leader ? "lr leader" : "lr") do %>
         <span class="rk"><%= i + 1 %></span>
         <span class="em"><%= entry.emoji || "👤" %></span>
         <span class="who">
@@ -25,7 +25,7 @@
             <div class="st">未兑换</div>
           <% end %>
         </span>
-      </div>
+      <% end %>
       <hr class="rule">
     </div>
   <% end %>
