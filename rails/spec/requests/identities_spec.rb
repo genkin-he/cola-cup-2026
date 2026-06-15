@@ -44,4 +44,14 @@ RSpec.describe "Identity (login) page", type: :request do
     get identity_path
     expect(response.body.scan('data-turbo="false"').size).to eq(2)
   end
+
+  it "expires a stale remember_user_token so it can't churn the session and break the OmniAuth CSRF check" do
+    stub_providers(twitter: true, oidc: false)
+    cookies[:remember_user_token] = "stale-and-unverifiable"
+
+    get identity_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.cookies["remember_user_token"]).to be_blank
+  end
 end
