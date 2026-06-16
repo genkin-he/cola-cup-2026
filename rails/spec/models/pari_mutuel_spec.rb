@@ -66,16 +66,15 @@ RSpec.describe PariMutuel do
       expect(deltas.select(&:won).map(&:delta)).to all(eq(0.33))
     end
 
-    it "leaves the pool unclaimed when no one backed the winner (house keeps it)" do
+    it "refunds everyone when no one backed the winner (no one is charged)" do
       votes = [ bet(1, "away", 1.0), bet(2, "draw", 2.0) ]
 
       deltas = described_class.deltas(votes, "home")
 
       expect(deltas.map(&:won)).to all(be(false))
-      expect(delta_for(deltas, 1).delta).to eq(-1.0)
-      expect(delta_for(deltas, 2).delta).to eq(-2.0)
-      # Not zero-sum: the whole pool is forfeited, nobody wins it.
-      expect(deltas.sum(&:delta)).to be_within(1e-9).of(-3.0)
+      # A push: every stake is refunded, nobody loses bottles.
+      expect(deltas.map(&:delta)).to all(eq(0.0))
+      expect(deltas.sum(&:delta)).to be_within(1e-9).of(0.0)
     end
 
     it "pays a sole winner nothing (no losers to draw from)" do
@@ -88,12 +87,14 @@ RSpec.describe PariMutuel do
       expect(sole.delta).to eq(0.0)
     end
 
-    it "charges a sole loser their full stake" do
+    it "refunds a sole loser (no one backed the winner, so it is a push)" do
       votes = [ bet(1, "home", 5.0) ]
 
       deltas = described_class.deltas(votes, "away")
 
-      expect(delta_for(deltas, 1).delta).to eq(-5.0)
+      sole = delta_for(deltas, 1)
+      expect(sole.won).to be(false)
+      expect(sole.delta).to eq(0.0)
     end
 
     it "reports d_used as the pool decimal for the bettor's own pick" do

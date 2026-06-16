@@ -1,9 +1,10 @@
 # Pari-mutuel payout (pure, no writes): each loser forfeits exactly their stake
 # into the pool; the winners split that pool in proportion to their stake. Each
 # winner's share is floored to 0.01 bottles, so the total paid out can never
-# exceed the pool — the house never subsidises (it keeps the sub-cent remainder,
-# and the whole pool when nobody backed the winner). d_used is the implied pool
-# decimal for the bettor's own pick (total pool ÷ that pick's stake).
+# exceed the pool — the house never subsidises (it keeps the sub-cent remainder).
+# When nobody backed the winning side there is no one to pay the pool to, so it
+# is a push: every stake is refunded and no one is charged. d_used is the implied
+# pool decimal for the bettor's own pick (total pool ÷ that pick's stake).
 module PariMutuel
   Delta = Struct.new(:user_id, :pick, :stake, :d_used, :won, :delta, keyword_init: true)
 
@@ -16,6 +17,8 @@ module PariMutuel
     total = votes.sum(&:stake)
     win_stake = votes.select { |v| v.pick == result }.sum(&:stake)
     lose_stake = total - win_stake
+    # Nobody backed the winning side: refund every stake, charge no one (a push).
+    refund_all = win_stake.zero?
 
     stake_by_pick = Hash.new(0.0)
     votes.each { |v| stake_by_pick[v.pick] += v.stake }
@@ -24,7 +27,9 @@ module PariMutuel
       won = vote.pick == result
       delta =
         if won
-          win_stake.positive? ? floor_to_hundredth((vote.stake / win_stake) * lose_stake) : 0.0
+          floor_to_hundredth((vote.stake / win_stake) * lose_stake)
+        elsif refund_all
+          0.0
         else
           -vote.stake
         end
