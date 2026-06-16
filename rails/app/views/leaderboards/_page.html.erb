@@ -1,0 +1,4 @@
+<%= render partial: "leaderboards/row", collection: board, as: :entry, locals: { offset: offset } %>
+<% if next_page %>
+  <span hidden data-next-url="<%= leaderboard_path(page: next_page) %>"></span>
+<% end %>

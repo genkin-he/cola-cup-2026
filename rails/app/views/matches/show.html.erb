@@ -43,7 +43,8 @@
             market_snapshot: @market_odds %>
     </div>
     <div class="dc-roster">
-      <%= render "matches/votes_list", match: @match, votes: @votes %>
+      <%= render "matches/votes_list", match: @match, votes: @votes,
+            vote_count: @vote_count, next_page: @next_page %>
     </div>
   </div>
 </section>

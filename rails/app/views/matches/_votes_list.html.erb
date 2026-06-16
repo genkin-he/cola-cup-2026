@@ -1,30 +1,24 @@
 <% show_result = match.settled? && match.result.present? %>
 <% ledger_by_user = show_result ? LedgerEntry.where(match_id: match.id).index_by(&:user_id) : {} %>
-<% tag_class = { "home" => "tag h", "draw" => "tag d", "away" => "tag a" } %>
+<% next_page = local_assigns.fetch(:next_page, nil) %>
+<% total = local_assigns.fetch(:vote_count, votes.size) %>
 <div class="voters" id="votes_list_<%= match.id %>">
   <h2 class="disp">
-    同事预测 · <%= votes.size %> 人
+    同事预测 · <%= total %> 人
   </h2>
   <hr class="rule">
-  <% if votes.empty? %>
+  <% if total.zero? %>
     <p style="padding: 20px 0; color: var(--low); font-size: 13px">
       还没有人预测，来当第一个 🥤
     </p>
   <% else %>
-    <% votes.each do |vote| %>
-      <% entry = ledger_by_user[vote.user_id] %>
-      <div class="vrow">
-        <span class="em"><%= vote.user.emoji || "👤" %></span>
-        <span class="nm"><%= vote.user.nickname %></span>
-        <span class="<%= tag_class[vote.pick] %>"><%= pick_team_label(match, vote.pick) %></span>
-        <% if show_result %>
-          <% if entry %>
-            <span class="res <%= entry.delta >= 0 ? "w" : "l" %>"><%= format_bottles(entry.delta) %> 🥤</span>
-          <% end %>
-        <% else %>
-          <span class="pk">🥤 <b><%= bottles_count(vote.stake) %></b> 瓶</span>
-        <% end %>
-      </div>
-    <% end %>
+    <div id="vote_rows_<%= match.id %>">
+      <%= render partial: "matches/vote_row", collection: votes, as: :vote,
+            locals: { match: match, show_result: show_result, ledger_by_user: ledger_by_user } %>
+      <% if next_page %>
+        <div class="scroll-sentinel" data-controller="infinite-scroll"
+             data-infinite-scroll-url-value="<%= match_path(match, page: next_page) %>"></div>
+      <% end %>
+    </div>
   <% end %>
 </div>

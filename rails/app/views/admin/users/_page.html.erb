@@ -1,0 +1,4 @@
+<%= render partial: "admin/users/user", collection: users, as: :user %>
+<% if next_page %>
+  <span hidden data-next-url="<%= admin_users_path(page: next_page) %>"></span>
+<% end %>

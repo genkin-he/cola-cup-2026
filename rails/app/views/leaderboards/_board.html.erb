@@ -1,32 +1,16 @@
 <%# Broadcast-safe leaderboard rows: no current_user — the 「你」 badge is added
     client-side by the highlight_me Stimulus controller (idempotent) from the
-    current-user-id meta tag, so the same markup serves initial render and broadcast. %>
-<div id="leaderboard_rows" data-controller="highlight-me">
-  <% board.each_with_index do |entry, i| %>
-    <% bets = entry.bets.to_i %>
-    <% wins = entry.wins.to_i %>
-    <% total = entry.total.to_f %>
-    <% redeemed = entry.redeemed.to_f %>
-    <% leader = i.zero? && bets > 0 %>
-    <% total_class = total > 0 ? "b pos" : total < 0 ? "b neg" : "b zero" %>
-    <div data-user-id="<%= entry.id %>">
-      <%= link_to user_path(entry), class: (leader ? "lr leader" : "lr") do %>
-        <span class="rk"><%= i + 1 %></span>
-        <span class="em"><%= entry.emoji || "👤" %></span>
-        <span class="who">
-          <div class="nm"><%= entry.nickname %></div>
-          <div class="m"><%= bets %> 场 · 猜中 <%= wins %><% if bets > 0 %> · <%= (wins.to_f / bets * 100).round %>% 命中<% end %></div>
-        </span>
-        <span class="n">
-          <div class="<%= total_class %>"><span class="lbl">战绩</span><%= format_bottles(total) %></div>
-          <% if redeemed > 0 %>
-            <div class="st hint" title="已兑换不计入排名">已兑 <%= format('%.1f', redeemed) %></div>
-          <% else %>
-            <div class="st">未兑换</div>
-          <% end %>
-        </span>
-      <% end %>
-      <hr class="rule">
-    </div>
+    current-user-id meta tag, so the same markup serves initial render and
+    broadcast. `refresh` re-applies it to rows appended by infinite scroll.
+    Broadcasts render the full board (no offset / next_page → ranks from 1, no
+    sentinel); the initial page renders one page plus a sentinel. %>
+<% offset = local_assigns.fetch(:offset, 0) %>
+<% next_page = local_assigns.fetch(:next_page, nil) %>
+<div id="leaderboard_rows" data-controller="highlight-me"
+     data-action="infinite-scroll:loaded->highlight-me#refresh">
+  <%= render partial: "leaderboards/row", collection: board, as: :entry, locals: { offset: offset } %>
+  <% if next_page %>
+    <div class="scroll-sentinel" data-controller="infinite-scroll"
+         data-infinite-scroll-url-value="<%= leaderboard_path(page: next_page) %>"></div>
   <% end %>
 </div>

@@ -1,7 +1,11 @@
 module Admin
   class UsersController < BaseController
     def index
-      @users = User.includes(:accounts).order(:created_at)
+      @users, @next_page, = paginate_relation(User.includes(:accounts).order(:created_at))
+      return unless params[:page]
+
+      render partial: "admin/users/page",
+             locals: { users: @users, next_page: @next_page }, layout: false
     end
 
     # Soft delete (reversible). Operating on yourself is not allowed.

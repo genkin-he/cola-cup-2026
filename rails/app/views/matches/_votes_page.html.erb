@@ -1,0 +1,7 @@
+<% show_result = match.settled? && match.result.present? %>
+<% ledger_by_user = show_result ? LedgerEntry.where(match_id: match.id).index_by(&:user_id) : {} %>
+<%= render partial: "matches/vote_row", collection: votes, as: :vote,
+      locals: { match: match, show_result: show_result, ledger_by_user: ledger_by_user } %>
+<% if next_page %>
+  <span hidden data-next-url="<%= match_path(match, page: next_page) %>"></span>
+<% end %>

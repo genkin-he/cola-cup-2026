@@ -9,6 +9,6 @@
   <% if @board.empty? %>
     <p style="padding:40px 0;text-align:center;color:var(--low);font-size:13px">还没有人参与</p>
   <% else %>
-    <%= render "leaderboards/board", board: @board %>
+    <%= render "leaderboards/board", board: @board, offset: @offset, next_page: @next_page %>
   <% end %>
 </section>

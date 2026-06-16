@@ -1,0 +1,16 @@
+<li id="admin_user_<%= user.id %>" class="<%= "gone" if user.deleted? %>">
+  <span class="em"><%= user.emoji.presence || "👤" %></span>
+  <span class="who">
+    <span class="nm"><%= user.nickname %></span>
+    <% if (handle = user.primary_handle).present? %>
+      <span class="hd">@<%= handle %></span>
+    <% end %>
+  </span>
+  <% if user == current_user %>
+    <span class="self">本人</span>
+  <% elsif user.deleted? %>
+    <%= button_to "恢复", restore_admin_user_path(user), method: :patch, class: "restore" %>
+  <% else %>
+    <%= button_to "删除", admin_user_path(user), method: :delete, class: "delete" %>
+  <% end %>
+</li>

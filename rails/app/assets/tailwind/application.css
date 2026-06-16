@@ -2418,3 +2418,10 @@ main {
   text-decoration: line-through;
 }
 
+/* Infinite-scroll sentinel — an invisible trigger row at a list's tail. Needs a
+   little height so the IntersectionObserver can register it entering the viewport. */
+.scroll-sentinel {
+  min-height: 1px;
+  list-style: none;
+}
+

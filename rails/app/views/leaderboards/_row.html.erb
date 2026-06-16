@@ -1,0 +1,26 @@
+<% rank = offset + entry_counter + 1 %>
+<% bets = entry.bets.to_i %>
+<% wins = entry.wins.to_i %>
+<% total = entry.total.to_f %>
+<% redeemed = entry.redeemed.to_f %>
+<% leader = rank == 1 && bets > 0 %>
+<% total_class = total > 0 ? "b pos" : total < 0 ? "b neg" : "b zero" %>
+<div id="lb_user_<%= entry.id %>" data-user-id="<%= entry.id %>">
+  <%= link_to user_path(entry), class: (leader ? "lr leader" : "lr") do %>
+    <span class="rk"><%= rank %></span>
+    <span class="em"><%= entry.emoji || "👤" %></span>
+    <span class="who">
+      <div class="nm"><%= entry.nickname %></div>
+      <div class="m"><%= bets %> 场 · 猜中 <%= wins %><% if bets > 0 %> · <%= (wins.to_f / bets * 100).round %>% 命中<% end %></div>
+    </span>
+    <span class="n">
+      <div class="<%= total_class %>"><span class="lbl">战绩</span><%= format_bottles(total) %></div>
+      <% if redeemed > 0 %>
+        <div class="st hint" title="已兑换不计入排名">已兑 <%= format('%.1f', redeemed) %></div>
+      <% else %>
+        <div class="st">未兑换</div>
+      <% end %>
+    </span>
+  <% end %>
+  <hr class="rule">
+</div>
