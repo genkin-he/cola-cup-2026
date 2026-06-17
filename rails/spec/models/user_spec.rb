@@ -54,6 +54,92 @@ RSpec.describe User do
     end
   end
 
+  describe ".board_for" do
+    it "resolves a known key and falls back to the default (镰刀榜) otherwise" do
+      expect(User.board_for("oracle").key).to eq("oracle")
+      expect(User.board_for("nope")).to eq(User::DEFAULT_BOARD)
+      expect(User.board_for(nil)).to eq(User::DEFAULT_BOARD)
+      expect(User::DEFAULT_BOARD.key).to eq("reaper")
+    end
+  end
+
+  describe ".bayesian_hit_score" do
+    it "lets a high-volume record beat a lucky small sample at a modest mean" do
+      mean = 1.0 / 3 # ≈ random three-way guessing
+      proven = User.bayesian_hit_score(17, 20, mean)
+      lucky = User.bayesian_hit_score(3, 3, mean)
+      expect(proven).to be > lucky
+    end
+  end
+
+  describe ".wilson_lower_bound" do
+    it "ranks a proven positive rate above a tiny perfect sample" do
+      expect(User.wilson_lower_bound(17, 20)).to be > User.wilson_lower_bound(3, 3)
+    end
+
+    it "is zero with no observations" do
+      expect(User.wilson_lower_bound(0, 0)).to eq(0.0)
+    end
+  end
+
+  describe ".leaderboard_for" do
+    it "韭菜榜: net score ascending, dropping users who never bet" do
+      big_loser = create(:user)
+      small_loser = create(:user)
+      spectator = create(:user)
+      create(:ledger_entry, user: big_loser, delta: -5.0, won: false)
+      create(:ledger_entry, user: small_loser, delta: -1.0, won: false)
+
+      ids = User.leaderboard_for(User.board_for("leek")).map(&:id)
+      expect(ids).to eq([ big_loser.id, small_loser.id ])
+      expect(ids).not_to include(spectator.id)
+    end
+
+    it "肥宅榜: redeemed credits descending, dropping users with no redemptions" do
+      glutton = create(:user)
+      nibbler = create(:user)
+      abstainer = create(:user)
+      [ glutton, nibbler, abstainer ].each { |u| create(:ledger_entry, user: u, delta: 10.0, won: true) }
+      create(:redemption, user: glutton, cost: 6.0)
+      create(:redemption, user: nibbler, cost: 2.0)
+
+      ids = User.leaderboard_for(User.board_for("otaku")).map(&:id)
+      expect(ids).to eq([ glutton.id, nibbler.id ])
+      expect(ids).not_to include(abstainer.id)
+    end
+
+    it "神域榜: a high-volume record outranks a lucky small sample (mean pulled down by cold users)" do
+      proven = create(:user)
+      lucky = create(:user)
+      cold_a = create(:user)
+      cold_b = create(:user)
+      4.times { create(:ledger_entry, user: proven, won: true) }
+      create(:ledger_entry, user: proven, won: false)
+      2.times { create(:ledger_entry, user: lucky, won: true) }
+      5.times { create(:ledger_entry, user: cold_a, won: false) }
+      5.times { create(:ledger_entry, user: cold_b, won: false) }
+
+      ids = User.leaderboard_for(User.board_for("oracle")).map(&:id)
+      expect(ids.first(2)).to eq([ proven.id, lucky.id ])
+    end
+
+    it "毒奶榜: the most reliably wrong rank first; sharp pickers sink; non-bettors excluded" do
+      reliable_jinx = create(:user) # 1/10
+      small_jinx = create(:user)    # 0/2
+      sharp = create(:user)         # 9/10
+      spectator = create(:user)
+      create(:ledger_entry, user: reliable_jinx, won: true)
+      9.times { create(:ledger_entry, user: reliable_jinx, won: false) }
+      2.times { create(:ledger_entry, user: small_jinx, won: false) }
+      9.times { create(:ledger_entry, user: sharp, won: true) }
+      create(:ledger_entry, user: sharp, won: false)
+
+      ids = User.leaderboard_for(User.board_for("jinx")).map(&:id)
+      expect(ids).to eq([ reliable_jinx.id, small_jinx.id, sharp.id ])
+      expect(ids).not_to include(spectator.id)
+    end
+  end
+
   # The test env cache is :null_store (never caches), so swap in a real store to
   # exercise the signature-keyed caching and its self-invalidation.
   describe ".leaderboard caching" do

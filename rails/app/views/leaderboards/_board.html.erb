@@ -2,15 +2,17 @@
     client-side by the highlight_me Stimulus controller (idempotent) from the
     current-user-id meta tag, so the same markup serves initial render and
     broadcast. `refresh` re-applies it to rows appended by infinite scroll.
-    Broadcasts render the full board (no offset / next_page → ranks from 1, no
-    sentinel); the initial page renders one page plus a sentinel. %>
+    Broadcasts render the full default board (no offset / next_page → ranks from
+    1, no sentinel); the initial page renders one page plus a sentinel. %>
 <% offset = local_assigns.fetch(:offset, 0) %>
 <% next_page = local_assigns.fetch(:next_page, nil) %>
+<% board = local_assigns.fetch(:board, User::DEFAULT_BOARD) %>
+<% mean = local_assigns.fetch(:mean, nil) %>
 <div id="leaderboard_rows" data-controller="highlight-me"
      data-action="infinite-scroll:loaded->highlight-me#refresh">
-  <%= render partial: "leaderboards/row", collection: board, as: :entry, locals: { offset: offset } %>
+  <%= render partial: "leaderboards/row", collection: entries, as: :entry, locals: { offset: offset, board: board, mean: mean } %>
   <% if next_page %>
     <div class="scroll-sentinel" data-controller="infinite-scroll"
-         data-infinite-scroll-url-value="<%= leaderboard_path(page: next_page) %>"></div>
+         data-infinite-scroll-url-value="<%= leaderboard_path(board: (board.key unless board == User::DEFAULT_BOARD), page: next_page) %>"></div>
   <% end %>
 </div>

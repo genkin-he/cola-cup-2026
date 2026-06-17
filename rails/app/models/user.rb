@@ -14,6 +14,13 @@ class User < ApplicationRecord
 
   LEADERBOARD_CACHE_KEY = "leaderboard/v1".freeze
 
+  # Score tuning for the accuracy boards. Both algorithms are sample-size aware so
+  # a lucky 3/3 never outranks a proven 17/20.
+  #   神域榜  Bayesian shrinkage: (wins + C·m) / (bets + C), m = global mean hit rate
+  #   毒奶榜  Wilson lower bound of the loss rate at 95% confidence (z = 1.96)
+  BAYESIAN_PRIOR_BETS = 5
+  WILSON_Z = 1.96
+
   # One cached leaderboard row. Holds only primitives so it Marshals cleanly into
   # Solid Cache — caching the AR rows would drag along attribute/type metadata and
   # the virtual select columns. Exposes exactly the readers leaderboards/_board
@@ -21,6 +28,52 @@ class User < ApplicationRecord
   Entry = Data.define(:id, :avatar_url, :emoji, :nickname, :total, :redeemed, :bets, :wins) do
     def to_param = id.to_s
   end
+
+  # A leaderboard variant. Every board re-ranks the same cached Entry list
+  # (User.leaderboard) in memory — no extra queries. `metric` tells the row
+  # template which value to headline; the ranking itself lives in leaderboard_for.
+  # `explainer` (+ optional `formula`) is the public, plain-language description of
+  # how the board is computed, shown beneath the table on the leaderboard page.
+  # The first board is the default (rendered at /leaderboard and broadcast live).
+  Board = Data.define(:key, :name, :emoji, :subtitle, :metric, :explainer, :formula)
+
+  BOARDS = [
+    Board.new(
+      key: "reaper", name: "镰刀榜", emoji: "🔪", metric: :total,
+      subtitle: "可乐净分最高 · 收割之王（兑换不影响排名）",
+      explainer: "按可乐净分（赢的瓶数减去输的瓶数）从高到低排名。兑换饮料只是花掉额度，不影响排名。",
+      formula: nil
+    ),
+    Board.new(
+      key: "leek", name: "韭菜榜", emoji: "🌱", metric: :total,
+      subtitle: "可乐净分最低 · 被割得最惨",
+      explainer: "镰刀榜的反面：按可乐净分从低到高排，输得最惨的排最前。只统计参与过预测的人。",
+      formula: nil
+    ),
+    Board.new(
+      key: "oracle", name: "神域榜", emoji: "🔮", metric: :hit_rate,
+      subtitle: "命中率最高 · 贝叶斯加权，场数越多越稳",
+      explainer: "按预测命中率排名，但做了「场数」修正：光靠手气猜中几场不够，要又准又多才稳。" \
+                 "只猜 1 场全中不会直接霸榜，会先按全场平均命中率打个折；预测场数越多，你的真实水平占比越高。",
+      formula: "贝叶斯加权 =（命中数 + 5 × 全场平均命中率）÷（预测场数 + 5），公开算法，同 IMDB Top 250 加权评分。"
+    ),
+    Board.new(
+      key: "jinx", name: "毒奶榜", emoji: "🥛", metric: :miss_rate,
+      subtitle: "押谁谁输 · 最稳定押错的人",
+      explainer: "神域榜的反面：按「押错率」排名，同样做了场数修正。偶尔押错一两次不算毒奶，" \
+                 "要稳定地押谁谁输、且场数够多，才能名列前茅。",
+      formula: "Wilson 置信区间下界（押错率，z = 1.96），公开算法，同 Reddit 评论排序。"
+    ),
+    Board.new(
+      key: "otaku", name: "肥宅榜", emoji: "🥤", metric: :redeemed,
+      subtitle: "可乐兑换最多 · 肥宅快乐",
+      explainer: "按累计兑换的额度从高到低排名，喝得最多的肥宅排最前。只统计兑换过饮料的人。",
+      formula: nil
+    )
+  ].freeze
+
+  BOARDS_BY_KEY = BOARDS.index_by(&:key).freeze
+  DEFAULT_BOARD = BOARDS.first
 
   has_many :accounts, dependent: :destroy
   has_many :votes, dependent: :destroy
@@ -86,6 +139,56 @@ class User < ApplicationRecord
       User.maximum(:updated_at).to_f,
       User.active.count
     ].join("-")
+  end
+
+  # Resolve a board key from the URL, falling back to the default (镰刀榜) for a
+  # missing or unknown key.
+  def self.board_for(key)
+    BOARDS_BY_KEY.fetch(key.to_s) { DEFAULT_BOARD }
+  end
+
+  # Rank the shared, cached leaderboard for one board. The default board reuses
+  # the relation's SQL order (total DESC); every other board re-sorts the same
+  # Entry array in memory. Accuracy boards exclude users who never bet, then sort
+  # by a sample-size-aware score; ties break by more bets, then earliest id.
+  def self.leaderboard_for(board)
+    rows = leaderboard
+    case board.key
+    when "leek"
+      rows.select { |row| row.bets.positive? }.sort_by { |row| [ row.total, row.id ] }
+    when "oracle"
+      ranked = rows.select { |row| row.bets.positive? }
+      mean = mean_hit_rate(ranked)
+      ranked.sort_by { |row| [ -bayesian_hit_score(row.wins, row.bets, mean), -row.bets, row.id ] }
+    when "jinx"
+      rows.select { |row| row.bets.positive? }
+          .sort_by { |row| [ -wilson_lower_bound(row.bets - row.wins, row.bets), -row.bets, row.id ] }
+    when "otaku"
+      rows.select { |row| row.redeemed.positive? }.sort_by { |row| [ -row.redeemed, row.id ] }
+    else
+      rows
+    end
+  end
+
+  def self.mean_hit_rate(rows)
+    bets = rows.sum(&:bets)
+    bets.positive? ? rows.sum(&:wins).fdiv(bets) : 0.0
+  end
+
+  # Posterior mean of the hit rate under a Beta prior worth BAYESIAN_PRIOR_BETS
+  # pseudo-bets centred on the global mean — small samples shrink toward the mean.
+  def self.bayesian_hit_score(wins, bets, mean)
+    (wins + BAYESIAN_PRIOR_BETS * mean) / (bets + BAYESIAN_PRIOR_BETS)
+  end
+
+  # Lower bound of the Wilson score interval for a proportion — the standard way
+  # to rank a positive rate while penalising small samples.
+  def self.wilson_lower_bound(positives, n)
+    return 0.0 if n.zero?
+
+    phat = positives.fdiv(n)
+    (phat + WILSON_Z**2 / (2 * n) -
+      WILSON_Z * Math.sqrt((phat * (1 - phat) + WILSON_Z**2 / (4 * n)) / n)) / (1 + WILSON_Z**2 / n)
   end
 
   # Link an OAuth identity to a user, creating the user on first login. The

@@ -1,4 +1,4 @@
-<%= render partial: "leaderboards/row", collection: board, as: :entry, locals: { offset: offset } %>
+<%= render partial: "leaderboards/row", collection: entries, as: :entry, locals: { offset: offset, board: board, mean: mean } %>
 <% if next_page %>
-  <span hidden data-next-url="<%= leaderboard_path(page: next_page) %>"></span>
+  <span hidden data-next-url="<%= leaderboard_path(board: (board.key unless board == User::DEFAULT_BOARD), page: next_page) %>"></span>
 <% end %>

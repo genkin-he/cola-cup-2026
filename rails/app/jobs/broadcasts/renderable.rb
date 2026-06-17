@@ -69,7 +69,7 @@ module Broadcasts
         "leaderboard",
         target: "leaderboard_rows",
         partial: "leaderboards/board",
-        locals: { board: User.leaderboard }
+        locals: { entries: User.leaderboard }
       )
     end
 

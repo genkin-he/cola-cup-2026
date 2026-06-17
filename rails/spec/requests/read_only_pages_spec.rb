@@ -53,7 +53,7 @@ RSpec.describe "Read-only pages", type: :request do
 
       get leaderboard_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include("可乐榜", "阿强", "50% 命中", "已兑 1.0")
+      expect(response.body).to include("镰刀榜", "阿强", "50% 命中", "已兑 1.0")
     end
 
     it "exposes the viewer's row for client-side 「你」 highlighting" do
@@ -65,6 +65,37 @@ RSpec.describe "Read-only pages", type: :request do
       # same markup is broadcast-safe); the server just exposes the row id.
       expect(response.body).to include('data-controller="highlight-me"')
       expect(response.body).to include(%(data-user-id="#{user.id}"))
+    end
+
+    it "switches to another board by ?board= and exposes the tab switcher" do
+      create(:user, nickname: "肥宅甲").tap do |u|
+        create(:ledger_entry, user: u, delta: 5.0, won: true)
+        create(:redemption, user: u, cost: 3.0)
+      end
+
+      get leaderboard_path(board: "otaku")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("肥宅榜") # current board title
+      # switcher links to the other boards
+      expect(response.body).to include("/leaderboard?board=oracle", "/leaderboard?board=jinx", "/leaderboard?board=leek")
+      expect(response.body).to include("怎么算的", "只统计兑换过饮料的人") # public explainer
+    end
+
+    it "publishes the formula and headlines the computed score on the accuracy boards" do
+      user = create(:user)
+      create(:ledger_entry, user: user, won: true)
+
+      get leaderboard_path(board: "oracle")
+      expect(response.body).to include("怎么算的", "贝叶斯加权", "IMDB", "神域分")
+
+      get leaderboard_path(board: "jinx")
+      expect(response.body).to include("Wilson 置信区间下界", "Reddit", "毒奶分")
+    end
+
+    it "falls back to the default board for an unknown ?board=" do
+      get leaderboard_path(board: "nope")
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("镰刀榜")
     end
   end
 

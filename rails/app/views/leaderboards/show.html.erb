@@ -1,14 +1,30 @@
 <section>
-  <%= turbo_stream_from "leaderboard" %>
+  <% if @board == User::DEFAULT_BOARD %><%= turbo_stream_from "leaderboard" %><% end %>
   <div class="lbh">
-    <h1 class="disp">可乐榜 🏆</h1>
-    <div class="sub">按总分排序（兑换不影响排名）</div>
+    <h1 class="disp"><%= @board.name %> <%= @board.emoji %></h1>
+    <div class="sub"><%= @board.subtitle %></div>
   </div>
+
+  <nav class="lb-tabs">
+    <% User::BOARDS.each do |board| %>
+      <%= link_to leaderboard_path(board: (board.key unless board == User::DEFAULT_BOARD)),
+                  class: ("on" if board == @board) do %>
+        <%= board.emoji %> <%= board.name.delete_suffix("榜") %>
+      <% end %>
+    <% end %>
+  </nav>
+
   <hr class="rule ink">
 
-  <% if @board.empty? %>
-    <p style="padding:40px 0;text-align:center;color:var(--low);font-size:13px">还没有人参与</p>
+  <% if @entries.empty? %>
+    <p style="padding:40px 0;text-align:center;color:var(--low);font-size:13px">还没有人上榜</p>
   <% else %>
-    <%= render "leaderboards/board", board: @board, offset: @offset, next_page: @next_page %>
+    <%= render "leaderboards/board", entries: @entries, board: @board, offset: @offset, next_page: @next_page, mean: @rank_mean %>
   <% end %>
+
+  <div class="lb-note">
+    <span class="lb-note-h">怎么算的</span>
+    <p><%= @board.explainer %></p>
+    <% if @board.formula %><p class="lb-formula"><%= @board.formula %></p><% end %>
+  </div>
 </section>

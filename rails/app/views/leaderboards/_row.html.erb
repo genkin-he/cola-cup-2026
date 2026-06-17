@@ -3,6 +3,9 @@
 <% wins = entry.wins.to_i %>
 <% total = entry.total.to_f %>
 <% redeemed = entry.redeemed.to_f %>
+<% mean = local_assigns.fetch(:mean, nil) %>
+<% hit_pct = bets > 0 ? (wins.fdiv(bets) * 100).round : nil %>
+<% rank_score = board_rank_score(board, entry, mean) %>
 <% leader = rank == 1 && bets > 0 %>
 <% total_class = total > 0 ? "b pos" : total < 0 ? "b neg" : "b zero" %>
 <div id="lb_user_<%= entry.id %>" data-user-id="<%= entry.id %>">
@@ -11,14 +14,26 @@
     <span class="em"><%= entry.emoji || "👤" %></span>
     <span class="who">
       <div class="nm"><%= entry.nickname %></div>
-      <div class="m"><%= bets %> 场 · 猜中 <%= wins %><% if bets > 0 %> · <%= (wins.to_f / bets * 100).round %>% 命中<% end %></div>
+      <div class="m"><%= bets %> 场 · 猜中 <%= wins %><% if bets > 0 %> · <%= hit_pct %>% 命中<% end %></div>
     </span>
     <span class="n">
-      <div class="<%= total_class %>"><span class="lbl">战绩</span><%= format_bottles(total) %></div>
-      <% if redeemed > 0 %>
-        <div class="st hint" title="已兑换不计入排名">已兑 <%= format('%.1f', redeemed) %></div>
+      <% case board.metric %>
+      <% when :hit_rate %>
+        <div class="b pos"><span class="lbl">神域分</span><%= rank_score ? format('%.1f', rank_score) : "—" %></div>
+        <div class="st">命中率 <%= hit_pct ? "#{hit_pct}%" : "—" %></div>
+      <% when :miss_rate %>
+        <div class="b neg"><span class="lbl">毒奶分</span><%= rank_score ? format('%.1f', rank_score) : "—" %></div>
+        <div class="st">失误率 <%= hit_pct ? "#{100 - hit_pct}%" : "—" %> · 押错 <%= bets - wins %>/<%= bets %></div>
+      <% when :redeemed %>
+        <div class="b pos"><span class="lbl">兑换</span><%= format('%.1f', redeemed) %></div>
+        <div class="st">战绩 <%= format_bottles(total) %></div>
       <% else %>
-        <div class="st">未兑换</div>
+        <div class="<%= total_class %>"><span class="lbl">战绩</span><%= format_bottles(total) %></div>
+        <% if redeemed > 0 %>
+          <div class="st hint" title="已兑换不计入排名">已兑 <%= format('%.1f', redeemed) %></div>
+        <% else %>
+          <div class="st">未兑换</div>
+        <% end %>
       <% end %>
     </span>
   <% end %>
