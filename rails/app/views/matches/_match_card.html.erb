@@ -1,28 +1,18 @@
 <% unresolved = !match.bettable? %>
 <% candidates = unresolved ? card_candidate_prediction(match) : nil %>
-<% if candidates %>
-  <%# Third-place slot: tap the card to expand it in place (native <details>, no
-      navigation, no odds). Collapsed shows only the candidate flags; expanded
-      lists every candidate country on its own row, ordered best-first. %>
+<% if candidates && candidates.size > 1 %>
+  <%# Third-place slot: the summary shows the top-ranked candidate as the predicted
+      opponent; tap the card to expand the remaining candidates in place (native
+      <details>, no navigation, no odds), ordered best-first. The full
+      qualified/eliminated ranking lives one tap further on /third-place. %>
   <details class="kc-card">
     <summary class="mrow kc-summary">
       <%= render "matches/card_meta", match: match, voted: voted %>
       <%= render "matches/card_teams", match: match %>
-      <span class="kc-toggle">第三名候选 <span class="kc-caret">▾</span></span>
+      <span class="kc-toggle">其他候选 <span class="kc-caret">▾</span></span>
     </summary>
     <div class="cand-list">
-      <% cut_drawn = false %>
-      <% candidates.each do |candidate| %>
-        <% if !candidate.qualified && !cut_drawn %>
-          <% cut_drawn = true %>
-          <div class="st-cutline cand-cut"><span>出线分界线</span></div>
-        <% end %>
-        <div class="cand-row <%= candidate.qualified ? "in" : "out" %>">
-          <span class="flag"><%= row_flag(candidate.row) %></span>
-          <span class="nm"><%= candidate.row.display_name %></span>
-          <span class="g"><%= candidate.group_letter %> 组③</span>
-        </div>
-      <% end %>
+      <%= candidate_list_rows(candidates.drop(1)) %>
       <%= link_to "查看完整第三名排行 →", third_place_path, class: "cand-more" %>
     </div>
   </details>

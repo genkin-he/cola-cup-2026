@@ -2715,37 +2715,13 @@ a.st-row:hover {
 }
 
 /* ───────── knockout soft-link predictions (uncertain matchups) ───────── */
-/* Restrained "this is a prediction" treatment: dimmed + dashed + a small tag. */
+/* Restrained "this is a prediction" treatment: dimmed + dashed underline. */
 .t.predicted {
   opacity: 0.86;
 }
 .t.predicted .nm {
   border-bottom: 1px dashed var(--border-hi);
   padding-bottom: 1px;
-}
-.pred-tag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 0 5px;
-  font-size: 9px;
-  line-height: 14px;
-  font-weight: 700;
-  color: var(--mid);
-  border: 1px dashed var(--border-hi);
-  border-radius: 4px;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-.cand-flags {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  font-size: 17px;
-  line-height: 1.15;
-}
-.cand-hint {
-  color: var(--low);
-  font-size: 12px;
 }
 .nm.placeholder {
   color: var(--low);
@@ -2804,7 +2780,7 @@ a.st-row:hover {
 }
 .cand-row {
   display: grid;
-  grid-template-columns: 24px 1fr auto;
+  grid-template-columns: 24px 1fr auto auto;
   align-items: center;
   gap: 10px;
   padding: 5px 0;
@@ -2823,10 +2799,18 @@ a.st-row:hover {
   font-size: 11px;
 }
 .cand-row.out {
-  opacity: 0.55;
+  opacity: 0.5;
 }
-.cand-cut {
-  margin: 8px 0 6px;
+.cand-st {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cand-st.in {
+  color: var(--win);
+}
+.cand-st.out {
+  color: var(--low);
 }
 .cand-more {
   display: inline-block;
@@ -2837,12 +2821,41 @@ a.st-row:hover {
   border-bottom: 1px solid color-mix(in srgb, var(--amber-soft) 40%, transparent);
 }
 
-/* match-detail page: predicted single team + third-place candidate list */
-.detail-vs .team.predicted .pred-tag {
-  margin: 4px 0 0;
-}
+/* match-detail page: predicted top third-place candidate + expandable rest */
 .detail-vs .team.is-candidates {
   align-self: stretch;
+}
+.detail-vs .team.is-candidates .cand-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.cand-disclosure {
+  margin-top: 10px;
+}
+.cand-disc-summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mid);
+  background: var(--elevated);
+  border: 1px solid var(--border-hi);
+  border-radius: 999px;
+}
+.cand-disc-summary::-webkit-details-marker {
+  display: none;
+}
+.cand-disc-summary::marker {
+  content: "";
+}
+.cand-disclosure[open] .cand-disc-summary .kc-caret {
+  transform: rotate(180deg);
 }
 .detail-cand-list {
   list-style: none;

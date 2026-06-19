@@ -37,17 +37,43 @@ RSpec.describe KnockoutPredictor do
       expect(prediction.row.team_id).to eq(teams[:second].id)
     end
 
-    it "lists third-place candidates ordered by current cross-group ranking" do
-      # B's third concedes least → best third → ranked above A's and C's.
+    it "leads with the predicted opponent, then lists the rest in fixed label order" do
+      # B's third concedes least → best third. With no full allocation yet, the
+      # best-ranked third leads; the others keep the slot's fixed group order
+      # (A→B→C), not a ranking order.
       a = group_with("A", third_concedes: 3)
       b = group_with("B", third_concedes: 1)
       c = group_with("C", third_concedes: 2)
 
       prediction = described_class.new.predict("3A/B/C")
       expect(prediction.kind).to eq(:candidates)
-      expect(prediction.candidates.map(&:group_letter)).to eq(%w[B C A])
-      expect(prediction.candidates.map { |candidate| candidate.row.team_id }).to eq([ b[:third], c[:third], a[:third] ].map(&:id))
+      expect(prediction.candidates.map(&:group_letter)).to eq(%w[B A C])
+      expect(prediction.candidates.map { |candidate| candidate.row.team_id }).to eq([ b[:third], a[:third], c[:third] ].map(&:id))
       expect(prediction.candidates.first).to have_attributes(rank: 1, qualified: true)
+    end
+
+    it "leads each third-place slot with a distinct, allowed, qualifying third" do
+      # All twelve groups present, with a clean 1..12 cross-group third ordering
+      # (more conceded -> worse goal difference -> lower rank), so exactly the
+      # top eight qualify. The eight real Round-of-32 third-place slots then get a
+      # one-to-one allocation: each qualifying third LEADS exactly one slot (it may
+      # still sit deeper in another slot's pool — only the lead must be unique).
+      letters = %w[A B C D E F G H I J K L]
+      letters.each_with_index { |letter, i| group_with(letter, third_concedes: i + 1) }
+      slot_labels = %w[3A/B/C/D/F 3C/D/F/G/H 3C/E/F/H/I 3E/H/I/J/K 3B/E/F/I/J 3A/E/H/I/J 3E/F/G/I/J 3D/E/I/J/L]
+      slot_labels.each_with_index do |label, i|
+        create(:match, stage: "r32", group_name: nil, home_team: nil, away_team: nil,
+          home_label: "1#{letters[i]}", away_label: label)
+      end
+
+      predictor = described_class.new
+      leads = slot_labels.map { |label| [ label, predictor.predict(label).candidates.first ] }
+
+      leads.each do |label, lead|
+        expect(label[1..].split("/")).to include(lead.group_letter) # from an allowed group
+        expect(lead.qualified).to be(true)                          # currently qualifying
+      end
+      expect(leads.map { |_label, lead| lead.group_letter }.uniq.size).to eq(8) # eight distinct opponents
     end
 
     it "returns nil for a winner-of-match slot" do

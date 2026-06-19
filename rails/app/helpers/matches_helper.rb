@@ -51,23 +51,23 @@ module MatchesHelper
 
   # Detail-page team cell (flag + name). A resolved team links to its fixtures
   # page; an unresolved knockout slot shows a soft-link prediction (single team,
-  # or the full third-place candidate list) marked "预测", else a readable label.
+  # or the top third-place candidate with the rest expandable) marked "预测",
+  # else a readable label.
   def detail_team_cell(team, label)
     return link_to(team_flag_name(team), team_path(team), class: "team") if team
 
     case (prediction = slot_prediction(team, label))&.kind
     when :team
-      link_to(safe_join([ row_flag_name(prediction.row), predicted_tag ]),
-              team_path(prediction.row.team_id), class: "team predicted")
+      link_to(row_flag_name(prediction.row), team_path(prediction.row.team_id), class: "team predicted")
     when :candidates
-      tag.span(detail_candidates(prediction.candidates), class: "team predicted is-candidates")
+      detail_candidate_cell(prediction.candidates)
     else
       tag.span(tag.span(humanize_slot_label(label), class: "nm placeholder"), class: "team")
     end
   end
 
   # Schedule-card team cell inner (compact). Resolved team → flag + name; an
-  # unresolved knockout slot → predicted team / a row of candidate flags / a
+  # unresolved knockout slot → predicted team / the top third-place candidate / a
   # readable label fallback. Used by matches/_card_teams (broadcast-safe: only
   # needs `match`, computes the predictor on its own).
   def card_team_html(team, label)
@@ -75,12 +75,9 @@ module MatchesHelper
 
     case (prediction = slot_prediction(team, label))&.kind
     when :team
-      safe_join([ row_flag_name(prediction.row), predicted_tag ])
+      row_flag_name(prediction.row)
     when :candidates
-      safe_join([
-        tag.span(safe_join(prediction.candidates.map { |c| tag.span(row_flag(c.row), class: "flag") }), class: "cand-flags"),
-        predicted_tag
-      ])
+      row_flag_name(prediction.candidates.first.row)
     else
       tag.span(humanize_slot_label(label), class: "nm placeholder")
     end
@@ -123,10 +120,6 @@ module MatchesHelper
     end
   end
 
-  def predicted_tag
-    tag.span("预测", class: "pred-tag")
-  end
-
   def team_flag_name(team)
     safe_join([
       tag.span(team_flag(team), class: "flag"),
@@ -146,30 +139,44 @@ module MatchesHelper
     ])
   end
 
-  # Vertical candidate list for the match-detail page: each third-place candidate
-  # (flag + name + group) ordered best-first, with a dashed qualification line —
-  # the same convention as the third-place ranking page — and a link to it.
-  def detail_candidates(candidates)
-    cut_drawn = false
-    rows = candidates.flat_map do |candidate|
-      items = []
-      if !candidate.qualified && !cut_drawn
-        cut_drawn = true
-        items << tag.div(tag.span("出线分界线"), class: "st-cutline cand-cut")
-      end
-      items << tag.div(class: [ "cand-row", candidate.qualified ? "in" : "out" ].join(" ")) do
-        safe_join([
-          tag.span(row_flag(candidate.row), class: "flag"),
-          tag.span(candidate.row.display_name, class: "nm"),
-          tag.span("#{candidate.group_letter} 组③", class: "g")
-        ])
-      end
-      items
-    end
+  # Detail-page third-place slot: the top-ranked candidate shown as the predicted
+  # opponent (linking to its fixtures), the rest expandable in ranking order, and
+  # a link to the full third-place ranking.
+  def detail_candidate_cell(candidates)
+    top, *rest = candidates
+    inner = [ link_to(row_flag_name(top.row), team_path(top.row.team_id), class: "cand-top") ]
+    inner << candidate_disclosure(rest) if rest.any?
+    inner << link_to("查看完整第三名排行 →", third_place_path, class: "cand-more")
+    tag.span(safe_join(inner), class: "team predicted is-candidates")
+  end
 
-    tag.span("第三名候选", class: "nm cand-hint") +
-      tag.div(safe_join(rows), class: "cand-list detail-cand-list") +
-      link_to("查看完整第三名排行 →", third_place_path, class: "cand-more")
+  # Expandable list of the remaining third-place candidates, in ranking order.
+  def candidate_disclosure(candidates)
+    tag.details(class: "cand-disclosure") do
+      safe_join([
+        tag.summary(safe_join([ "其他候选 ", tag.span("▾", class: "kc-caret") ]), class: "cand-disc-summary"),
+        tag.div(candidate_list_rows(candidates), class: "cand-list detail-cand-list")
+      ])
+    end
+  end
+
+  # Candidate rows in the slot's fixed group order. Each row carries its own
+  # 线上 / 线下 tag, and teams currently below the qualifying line are dimmed —
+  # the live picture reads at a glance without the list reordering as results land
+  # (a 线下 team can still climb above the line later).
+  def candidate_list_rows(candidates)
+    safe_join(candidates.map { |candidate| candidate_row(candidate) })
+  end
+
+  def candidate_row(candidate)
+    tag.div(class: [ "cand-row", candidate.qualified ? "in" : "out" ].join(" ")) do
+      safe_join([
+        tag.span(row_flag(candidate.row), class: "flag"),
+        tag.span(candidate.row.display_name, class: "nm"),
+        tag.span("#{candidate.group_letter} 组③", class: "g"),
+        tag.span(candidate.qualified ? "线上" : "线下", class: [ "cand-st", candidate.qualified ? "in" : "out" ].join(" "))
+      ])
+    end
   end
 
   # The "VS" / score middle token on a schedule card (shows the score as soon as
