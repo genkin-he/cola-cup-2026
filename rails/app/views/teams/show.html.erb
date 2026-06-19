@@ -1,12 +1,12 @@
 <% content_for :title, "#{@team.display_name} · 赛程 · The Cola of Cup" %>
 <section>
   <div class="detail-head">
-    <%= link_to root_path, class: "back-btn" do %>
-      <span class="bk-arrow">←</span> 返回赛程
+    <%= link_to root_path, class: "back-btn", data: { controller: "back", action: "click->back#go" } do %>
+      <span class="bk-arrow">←</span> 返回
     <% end %>
     <% group_match = @matches.find { |match| match.group_name.present? } %>
     <% if group_match && (letter = match_group_letter(group_match)) %>
-      <%= link_to "#{letter} 组积分榜", group_path(letter), class: "back-btn" %>
+      <%= link_to "#{letter} 组积分榜", group_path(letter), class: "detail-crumb" %>
     <% end %>
   </div>
   <hr class="rule ink">

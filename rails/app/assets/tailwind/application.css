@@ -82,7 +82,6 @@
   box-sizing: border-box;
 }
 html {
-  scroll-behavior: smooth;
   scrollbar-gutter: stable;
 }
 body {
@@ -672,39 +671,53 @@ main {
   padding: 16px 0 14px;
   flex-wrap: wrap;
 }
+/* Clean, borderless back affordance (← 返回) — consistent on every sub-page,
+   returns to the previous page via the back controller. */
 .back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 5px;
   flex-shrink: 0;
   font-family: var(--body);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--mid);
   background: transparent;
-  border: 1px solid var(--border-hi);
-  border-radius: 999px;
-  padding: 7px 15px 7px 13px;
+  border: none;
+  padding: 2px 0;
   cursor: pointer;
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease,
-    color 0.16s ease;
+  transition: color 0.16s ease;
   white-space: nowrap;
 }
 .back-btn:hover {
-  background: var(--elevated);
-  border-color: var(--hi);
   color: var(--hi);
 }
 .back-btn .bk-arrow {
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1;
 }
 .detail-stage {
   font-size: 13px;
   color: var(--mid);
   white-space: nowrap;
+}
+/* Secondary context link (group table) — lighter than the back pill, so the row
+   reads as one back button + a quiet breadcrumb rather than two buttons. */
+.detail-crumb {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mid);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 1px solid color-mix(in srgb, var(--mid) 35%, transparent);
+  padding-bottom: 1px;
+  transition:
+    color 0.16s ease,
+    border-color 0.16s ease;
+}
+.detail-crumb:hover {
+  color: var(--hi);
+  border-color: var(--hi);
 }
 .detail-head .badge {
   margin-left: auto;
@@ -721,6 +734,8 @@ main {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  color: inherit;
 }
 .detail-vs .team .flag {
   font-size: clamp(48px, 14vw, 72px);
@@ -2744,32 +2759,29 @@ a.st-row:hover {
 .kc-static {
   cursor: default;
 }
-/* Obvious expand affordance — a pill sitting where the odds block would be. */
+/* Expand affordance — a small label + triangle where the odds block would be
+   (no pill); the triangle points right when closed, down when open. */
 .kc-toggle {
   align-self: center;
   justify-self: end;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--mid);
-  background: var(--elevated);
-  border: 1px solid var(--border-hi);
-  border-radius: 999px;
+  color: var(--low);
   white-space: nowrap;
 }
 .kc-summary:hover .kc-toggle {
-  border-color: var(--hi);
   color: var(--hi);
 }
 .kc-caret {
   display: inline-block;
+  font-size: 10px;
   transition: transform 0.15s ease;
 }
 .kc-card[open] .kc-toggle .kc-caret {
-  transform: rotate(180deg);
+  transform: rotate(90deg);
 }
 .cand-list {
   margin: 4px 0 10px;
@@ -2783,8 +2795,14 @@ a.st-row:hover {
   grid-template-columns: 24px 1fr auto auto;
   align-items: center;
   gap: 10px;
-  padding: 5px 0;
+  padding: 5px 6px;
+  border-radius: 8px;
   font-size: 12px;
+  text-decoration: none;
+  color: inherit;
+}
+.cand-row:hover {
+  background: color-mix(in srgb, var(--elevated) 60%, transparent);
 }
 .cand-row .flag {
   font-size: 18px;
@@ -2793,10 +2811,6 @@ a.st-row:hover {
   font-family: var(--disp);
   font-weight: 700;
   font-size: 15px;
-}
-.cand-row .g {
-  color: var(--low);
-  font-size: 11px;
 }
 .cand-row.out {
   opacity: 0.5;
@@ -2811,6 +2825,23 @@ a.st-row:hover {
 }
 .cand-st.out {
   color: var(--low);
+}
+/* "position+group" code on every predicted team (1A / 2B / 3C). */
+.slot-code {
+  margin-left: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--low);
+  white-space: nowrap;
+}
+/* Predicted (uncertain) team names read as a guess: dashed underline everywhere
+   they appear — detail cells and the candidate / possible-team lists (cards
+   already dim+dash via .t.predicted). */
+.detail-vs .team.predicted .nm,
+.cand-row .nm {
+  border-bottom: 1px dashed var(--border-hi);
+  padding-bottom: 1px;
 }
 .cand-more {
   display: inline-block;
@@ -2830,23 +2861,25 @@ a.st-row:hover {
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  color: inherit;
 }
 .cand-disclosure {
   margin-top: 10px;
 }
+/* Small label + triangle, not a pill; triangle points down when open. */
 .cand-disc-summary {
   list-style: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--mid);
-  background: var(--elevated);
-  border: 1px solid var(--border-hi);
-  border-radius: 999px;
+  color: var(--low);
+}
+.cand-disc-summary:hover {
+  color: var(--hi);
 }
 .cand-disc-summary::-webkit-details-marker {
   display: none;
@@ -2855,7 +2888,7 @@ a.st-row:hover {
   content: "";
 }
 .cand-disclosure[open] .cand-disc-summary .kc-caret {
-  transform: rotate(180deg);
+  transform: rotate(90deg);
 }
 .detail-cand-list {
   list-style: none;
@@ -2864,5 +2897,36 @@ a.st-row:hover {
   border: 1px dashed var(--border-hi);
   border-radius: 10px;
   text-align: left;
+}
+
+/* deeper-round (W/L) predictions: a side is a set of possible teams. Collapsed
+   shows flags (dashed underline — these are uncertain); expanding lists names. */
+.multi-flags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  font-size: 16px;
+  line-height: 1.2;
+  padding-bottom: 2px;
+  border-bottom: 1px dashed var(--border-hi);
+}
+.detail-vs .team.is-multi {
+  align-self: stretch;
+}
+.detail-vs .team.is-multi .multi-flags {
+  justify-content: center;
+  font-size: clamp(26px, 7vw, 40px);
+}
+.multi-head {
+  margin: 8px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mid);
+}
+.multi-head:first-child {
+  margin-top: 0;
+}
+.cand-row.multi-row {
+  grid-template-columns: 24px 1fr auto;
 }
 

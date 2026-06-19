@@ -10,12 +10,7 @@
     <div class="srclbl">市场·<%= big[:short] %></div>
     <div class="pct"><%= big[:pct] %>%</div>
     <% if (dv = big[:divergence]) %>
-      <div class="dv hot <%= dv[:tone] %>">
-        <% if dv[:tone] == "mk" %>
-          <span class="spark" data-tip="<%= MatchesHelper::DIVERGENCE_TIP %>" tabindex="0" role="button" aria-label="分歧说明">⚡</span>
-        <% end %>
-        <%= dv[:text] %>
-      </div>
+      <div class="dv hot <%= dv[:tone] %>"><%= dv[:text] %></div>
     <% end %>
   <% when :crowd %>
     <div class="srclbl cr">同事·<%= big[:short] %></div>

@@ -76,9 +76,37 @@ RSpec.describe KnockoutPredictor do
       expect(leads.map { |_label, lead| lead.group_letter }.uniq.size).to eq(8) # eight distinct opponents
     end
 
-    it "returns nil for a winner-of-match slot" do
+    it "returns nil for a winner-of-match slot when no bracket is loaded" do
       group_with("A")
       expect(described_class.new.predict("W74")).to be_nil
+    end
+
+    it "predicts a winner slot inside the window as its set of possible teams" do
+      a = group_with("A")
+      b = group_with("B")
+      # R32 (unresolved) is the frontier, so the window is r32/r16/qf.
+      create(:match, stage: "r32", group_name: nil, home_team: nil, away_team: nil,
+        external_key: "m:73", home_label: "1A", away_label: "2B")
+      create(:match, stage: "r32", group_name: nil, home_team: nil, away_team: nil,
+        external_key: "m:74", home_label: "1B", away_label: "2A")
+      create(:match, stage: "r16", group_name: nil, home_team: nil, away_team: nil,
+        external_key: "m:89", home_label: "W73", away_label: "W74")
+
+      prediction = described_class.new.predict("W73")
+      expect(prediction.kind).to eq(:multi)
+      expect(prediction.candidates.map { |candidate| candidate.row.team_id })
+        .to contain_exactly(a[:first].id, b[:second].id)
+    end
+
+    it "does not predict a round beyond the window" do
+      group_with("A")
+      group_with("B")
+      create(:match, stage: "r32", group_name: nil, home_team: nil, away_team: nil,
+        external_key: "m:73", home_label: "1A", away_label: "2B")
+      create(:match, stage: "sf", group_name: nil, home_team: nil, away_team: nil,
+        external_key: "m:101", home_label: "W97", away_label: "W98")
+
+      expect(described_class.new.predict("W97")).to be_nil
     end
 
     it "returns nil for a blank label" do

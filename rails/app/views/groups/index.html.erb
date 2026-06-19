@@ -1,11 +1,11 @@
 <% content_for :title, "小组积分榜 · The Cola of Cup" %>
 <section>
   <div class="detail-head">
-    <%= link_to root_path, class: "back-btn" do %>
-      <span class="bk-arrow">←</span> 返回赛程
+    <%= link_to root_path, class: "back-btn", data: { controller: "back", action: "click->back#go" } do %>
+      <span class="bk-arrow">←</span> 返回
     <% end %>
-    <%= link_to "第三名出线排行", third_place_path, class: "back-btn" %>
-    <%= link_to "射手榜", scorers_path, class: "back-btn" %>
+    <%= link_to "第三名出线排行", third_place_path, class: "detail-crumb" %>
+    <%= link_to "射手榜", scorers_path, class: "detail-crumb" %>
   </div>
   <hr class="rule ink">
 

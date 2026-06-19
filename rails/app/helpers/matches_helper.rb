@@ -58,11 +58,13 @@ module MatchesHelper
 
     case (prediction = slot_prediction(team, label))&.kind
     when :team
-      link_to(row_flag_name(prediction.row), team_path(prediction.row.team_id), class: "team predicted")
+      group_link(row_flag_name_code(prediction.row, label), label_group(label), "team predicted")
     when :candidates
       detail_candidate_cell(prediction.candidates)
+    when :multi
+      detail_multi_cell(prediction.candidates)
     else
-      tag.span(tag.span(humanize_slot_label(label), class: "nm placeholder"), class: "team")
+      group_link(tag.span(humanize_slot_label(label), class: "nm placeholder"), label_group(label), "team")
     end
   end
 
@@ -75,11 +77,14 @@ module MatchesHelper
 
     case (prediction = slot_prediction(team, label))&.kind
     when :team
-      row_flag_name(prediction.row)
+      group_link(row_flag_name_code(prediction.row, label), label_group(label))
     when :candidates
-      row_flag_name(prediction.candidates.first.row)
+      top = prediction.candidates.first
+      group_link(row_flag_name_code(top.row, slot_code(top)), top.group_letter)
+    when :multi
+      multi_flags(prediction.candidates)
     else
-      tag.span(humanize_slot_label(label), class: "nm placeholder")
+      group_link(tag.span(humanize_slot_label(label), class: "nm placeholder"), label_group(label))
     end
   end
 
@@ -89,6 +94,17 @@ module MatchesHelper
     [ [ match.home_team, match.home_label ], [ match.away_team, match.away_label ] ]
       .filter_map { |team, label| slot_prediction(team, label) }
       .find { |prediction| prediction.kind == :candidates }&.candidates
+  end
+
+  # The unresolved [label, possible-teams] sides of a deeper-round (W/L) card —
+  # used to fill its expandable disclosure with each side's possible countries —
+  # or nil when neither side is a many-teams prediction.
+  def card_multi_sides(match)
+    [ [ match.home_team, match.home_label ], [ match.away_team, match.away_label ] ]
+      .filter_map { |team, label|
+        prediction = slot_prediction(team, label)
+        [ label, prediction.candidates ] if prediction&.kind == :multi
+      }.presence
   end
 
   # Per-render predictor; reused across every card on a page (like focus_match?).
@@ -139,22 +155,50 @@ module MatchesHelper
     ])
   end
 
-  # Detail-page third-place slot: the top-ranked candidate shown as the predicted
-  # opponent (linking to its fixtures), the rest expandable in ranking order, and
-  # a link to the full third-place ranking.
+  # An uncertain (predicted) team: flag + name + its slot code (1A / 2B / 3C). The
+  # name is dashed-underlined (via .predicted) to read as a guess, not a fixture.
+  def row_flag_name_code(row, code)
+    safe_join([ row_flag_name(row), tag.span(code, class: "slot-code") ])
+  end
+
+  # A team's "position + group" slot code from its current standing: 1A (group
+  # winner), 2B (runner-up), 3C (third). The shared notation for every predicted
+  # team, whoever lists it.
+  def slot_code(candidate)
+    "#{candidate.position}#{candidate.group_letter}"
+  end
+
+  # Link a predicted-team display to its group's table; a plain span when there's
+  # no single group to point at (e.g. a "W97" winner-of slot).
+  def group_link(content, letter, css = nil)
+    return tag.span(content, class: css) unless letter.present?
+
+    link_to(content, group_path(letter), class: css)
+  end
+
+  # The single group letter a label points at (1A/2B → A/B); nil for multi-group
+  # or match-winner labels (3A/B/.., W97).
+  def label_group(label)
+    label.to_s[/\A[12]([A-L])\z/, 1]
+  end
+
+  # Detail-page third-place slot: the predicted opponent shown up top (linking to
+  # its group), with an expandable list of ALL candidates — the predicted one
+  # included — plus a link to the full third-place ranking.
   def detail_candidate_cell(candidates)
-    top, *rest = candidates
-    inner = [ link_to(row_flag_name(top.row), team_path(top.row.team_id), class: "cand-top") ]
-    inner << candidate_disclosure(rest) if rest.any?
+    top = candidates.first
+    inner = [ group_link(row_flag_name_code(top.row, slot_code(top)), top.group_letter, "cand-top") ]
+    inner << candidate_disclosure(candidates) if candidates.size > 1
     inner << link_to("查看完整第三名排行 →", third_place_path, class: "cand-more")
     tag.span(safe_join(inner), class: "team predicted is-candidates")
   end
 
-  # Expandable list of the remaining third-place candidates, in ranking order.
+  # Expandable list of all third-place candidates for this slot (the predicted
+  # opponent first, then the rest), in the slot's fixed group order.
   def candidate_disclosure(candidates)
     tag.details(class: "cand-disclosure") do
       safe_join([
-        tag.summary(safe_join([ "其他候选 ", tag.span("▾", class: "kc-caret") ]), class: "cand-disc-summary"),
+        tag.summary(safe_join([ "候选 ", tag.span("▸", class: "kc-caret") ]), class: "cand-disc-summary"),
         tag.div(candidate_list_rows(candidates), class: "cand-list detail-cand-list")
       ])
     end
@@ -169,14 +213,44 @@ module MatchesHelper
   end
 
   def candidate_row(candidate)
-    tag.div(class: [ "cand-row", candidate.qualified ? "in" : "out" ].join(" ")) do
+    content = safe_join([
+      tag.span(row_flag(candidate.row), class: "flag"),
+      tag.span(candidate.row.display_name, class: "nm"),
+      tag.span(slot_code(candidate), class: "slot-code"),
+      tag.span(candidate.qualified ? "线上" : "线下", class: [ "cand-st", candidate.qualified ? "in" : "out" ].join(" "))
+    ])
+    group_link(content, candidate.group_letter, [ "cand-row", candidate.qualified ? "in" : "out" ].join(" "))
+  end
+
+  # Collapsed view of a deeper-round (W/L) slot: just the flags of every team that
+  # could fill it — names live one tap away in the expandable disclosure.
+  def multi_flags(candidates)
+    tag.span(safe_join(candidates.map { |candidate| tag.span(row_flag(candidate.row), class: "flag") }), class: "multi-flags")
+  end
+
+  # Detail-page deeper-round cell: flags up top, an expandable list of every
+  # possible team (name + group) below.
+  def detail_multi_cell(candidates)
+    disclosure = tag.details(class: "cand-disclosure") do
       safe_join([
-        tag.span(row_flag(candidate.row), class: "flag"),
-        tag.span(candidate.row.display_name, class: "nm"),
-        tag.span("#{candidate.group_letter} 组③", class: "g"),
-        tag.span(candidate.qualified ? "线上" : "线下", class: [ "cand-st", candidate.qualified ? "in" : "out" ].join(" "))
+        tag.summary(safe_join([ "候选（#{candidates.size}） ", tag.span("▸", class: "kc-caret") ]), class: "cand-disc-summary"),
+        tag.div(multi_rows(candidates), class: "cand-list detail-cand-list")
       ])
     end
+    tag.span(safe_join([ multi_flags(candidates), disclosure ]), class: "team predicted is-multi")
+  end
+
+  # Name rows (flag + name + slot code) for a deeper-round slot's possible teams,
+  # each linking to that team's group table.
+  def multi_rows(candidates)
+    safe_join(candidates.map { |candidate|
+      content = safe_join([
+        tag.span(row_flag(candidate.row), class: "flag"),
+        tag.span(candidate.row.display_name, class: "nm"),
+        tag.span(slot_code(candidate), class: "slot-code")
+      ])
+      group_link(content, candidate.group_letter, "cand-row multi-row")
+    })
   end
 
   # The "VS" / score middle token on a schedule card (shows the score as soon as

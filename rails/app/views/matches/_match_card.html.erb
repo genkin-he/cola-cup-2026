@@ -1,5 +1,6 @@
 <% unresolved = !match.bettable? %>
 <% candidates = unresolved ? card_candidate_prediction(match) : nil %>
+<% multi_sides = unresolved && !candidates ? card_multi_sides(match) : nil %>
 <% if candidates && candidates.size > 1 %>
   <%# Third-place slot: the summary shows the top-ranked candidate as the predicted
       opponent; tap the card to expand the remaining candidates in place (native
@@ -9,11 +10,28 @@
     <summary class="mrow kc-summary">
       <%= render "matches/card_meta", match: match, voted: voted %>
       <%= render "matches/card_teams", match: match %>
-      <span class="kc-toggle">其他候选 <span class="kc-caret">▾</span></span>
+      <span class="kc-toggle">候选 <span class="kc-caret">▸</span></span>
     </summary>
     <div class="cand-list">
-      <%= candidate_list_rows(candidates.drop(1)) %>
+      <%= candidate_list_rows(candidates) %>
       <%= link_to "查看完整第三名排行 →", third_place_path, class: "cand-more" %>
+    </div>
+  </details>
+<% elsif multi_sides %>
+  <%# Deeper-round slot (W74/L101): both sides are sets of possible teams. The
+      summary shows each side's flags; expanding lists every possible country per
+      side. Display-only, defers to the real teams once the bracket resolves. %>
+  <details class="kc-card">
+    <summary class="mrow kc-summary">
+      <%= render "matches/card_meta", match: match, voted: voted %>
+      <%= render "matches/card_teams", match: match %>
+      <span class="kc-toggle">候选 <span class="kc-caret">▸</span></span>
+    </summary>
+    <div class="cand-list">
+      <% multi_sides.each do |label, side_candidates| %>
+        <div class="multi-head"><%= humanize_slot_label(label) %>（<%= side_candidates.size %> 队）</div>
+        <%= multi_rows(side_candidates) %>
+      <% end %>
     </div>
   </details>
 <% elsif unresolved %>
