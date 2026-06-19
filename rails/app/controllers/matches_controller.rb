@@ -1,11 +1,9 @@
 class MatchesController < ApplicationController
   include MatchDetailData
+  include MatchListData
 
   def index
-    @matches = Match.chronological.includes(:home_team, :away_team).to_a
-    @tallies = Vote.tallies_by_match
-    @market_odds = latest_polymarket_by_match
-    @voted_match_ids = voted_match_ids
+    assign_schedule_data(Match.chronological.includes(:home_team, :away_team).to_a)
   end
 
   def show
@@ -25,20 +23,5 @@ class MatchesController < ApplicationController
     @polymarket_url = polymarket_url(@match)
     @next_match_id = current_user ? next_match_id(@match) : nil
     @outcomes = helpers.match_outcomes(@match, @market_odds, @vote_odds)
-  end
-
-  private
-
-  # Latest polymarket snapshot per match (one row each), keyed by match_id.
-  def latest_polymarket_by_match
-    latest_ids = OddsSnapshot.where(source: "polymarket").group(:match_id).maximum(:id).values
-    OddsSnapshot.where(id: latest_ids).index_by(&:match_id)
-  end
-
-  # Devise defines current_user on controllers (阶段4); anonymous => no votes.
-  def voted_match_ids
-    return Set.new unless current_user
-
-    current_user.votes.pluck(:match_id).to_set
   end
 end

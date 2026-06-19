@@ -1,5 +1,42 @@
-<%= link_to match_path(match), class: "mrow" do %>
-  <%= render "matches/card_meta", match: match, voted: voted %>
-  <%= render "matches/card_teams", match: match %>
-  <%= render "matches/card_big", match: match, tally: tally, market: market %>
+<% unresolved = !match.bettable? %>
+<% candidates = unresolved ? card_candidate_prediction(match) : nil %>
+<% if candidates %>
+  <%# Third-place slot: tap the card to expand it in place (native <details>, no
+      navigation, no odds). Collapsed shows only the candidate flags; expanded
+      lists every candidate country on its own row, ordered best-first. %>
+  <details class="kc-card">
+    <summary class="mrow kc-summary">
+      <%= render "matches/card_meta", match: match, voted: voted %>
+      <%= render "matches/card_teams", match: match %>
+      <span class="kc-toggle">可能对手 <span class="kc-caret">▾</span></span>
+    </summary>
+    <div class="cand-list">
+      <% cut_drawn = false %>
+      <% candidates.each do |candidate| %>
+        <% if !candidate.qualified && !cut_drawn %>
+          <% cut_drawn = true %>
+          <div class="st-cutline cand-cut"><span>出线分界线</span></div>
+        <% end %>
+        <div class="cand-row <%= candidate.qualified ? "in" : "out" %>">
+          <span class="flag"><%= row_flag(candidate.row) %></span>
+          <span class="nm"><%= candidate.row.display_name %></span>
+          <span class="g"><%= candidate.group_letter %> 组③</span>
+        </div>
+      <% end %>
+      <%= link_to "查看完整第三名排行 →", third_place_path, class: "cand-more" %>
+    </div>
+  </details>
+<% elsif unresolved %>
+  <%# Predicted single teams / placeholder text — informational, no odds, nothing
+      to navigate to yet, so it is a plain row rather than a link. %>
+  <div class="mrow no-big no-link kc-static">
+    <%= render "matches/card_meta", match: match, voted: voted %>
+    <%= render "matches/card_teams", match: match %>
+  </div>
+<% else %>
+  <%= link_to match_path(match), class: "mrow" do %>
+    <%= render "matches/card_meta", match: match, voted: voted %>
+    <%= render "matches/card_teams", match: match %>
+    <%= render "matches/card_big", match: match, tally: tally, market: market %>
+  <% end %>
 <% end %>

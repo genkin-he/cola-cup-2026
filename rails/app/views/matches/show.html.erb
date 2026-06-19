@@ -5,21 +5,16 @@
     <%= link_to root_path(anchor: "match_card_#{@match.id}"), class: "back-btn" do %>
       <span class="bk-arrow">←</span> 返回赛程
     <% end %>
-    <span class="detail-stage"><%= Match.stage_label(@match.stage) %><% if @match.group_name.present? %> · <%= @match.group_name %><% end %></span>
+    <% group_letter = match_group_letter(@match) %>
+    <span class="detail-stage"><%= Match.stage_label(@match.stage) %><% if @match.group_name.present? %> · <% if group_letter %><%= link_to @match.group_name, group_path(group_letter), class: "stage-group-link" %><% else %><%= @match.group_name %><% end %><% end %></span>
     <%= status_badge(status) %>
   </div>
   <hr class="rule">
 
   <div class="detail-vs">
-    <span class="team">
-      <span class="flag"><%= team_flag(@match.home_team) %></span>
-      <span class="nm"><%= team_display_name(@match.home_team, @match.home_label) %></span>
-    </span>
+    <%= detail_team_cell(@match.home_team, @match.home_label) %>
     <span class="x"><%= detail_score_token(@match) %></span>
-    <span class="team">
-      <span class="flag"><%= team_flag(@match.away_team) %></span>
-      <span class="nm"><%= team_display_name(@match.away_team, @match.away_label) %></span>
-    </span>
+    <%= detail_team_cell(@match.away_team, @match.away_label) %>
   </div>
 
   <div class="detail-when">

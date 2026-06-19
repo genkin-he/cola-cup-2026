@@ -1,0 +1,38 @@
+<%# Group standings table. `group` is a Standings::Group. Top 2 qualify, the
+    3rd place is in contention for a best-third-placed slot, the rest are out. %>
+<div class="standings">
+  <div class="st-row st-head">
+    <span class="st-rk">#</span>
+    <span class="st-team">球队</span>
+    <span class="st-n" title="场次">场</span>
+    <span class="st-n" title="胜">胜</span>
+    <span class="st-n" title="平">平</span>
+    <span class="st-n" title="负">负</span>
+    <span class="st-n st-gd" title="净胜球">净</span>
+    <span class="st-n" title="进球">进</span>
+    <span class="st-n" title="失球">失</span>
+    <span class="st-n st-pts" title="积分">分</span>
+  </div>
+  <% group.rows.each_with_index do |row, index| %>
+    <% zone = index < 2 ? "qual" : index == 2 ? "third" : "out" %>
+    <%= link_to team_path(row.team_id), class: "st-row #{zone}" do %>
+      <span class="st-rk num"><%= index + 1 %></span>
+      <span class="st-team">
+        <span class="flag"><%= row_flag(row) %></span>
+        <span class="nm"><%= row.display_name %></span>
+      </span>
+      <span class="st-n num"><%= row.played %></span>
+      <span class="st-n num"><%= row.won %></span>
+      <span class="st-n num"><%= row.drawn %></span>
+      <span class="st-n num"><%= row.lost %></span>
+      <span class="st-n st-gd num"><%= format_goal_diff(row.goal_diff) %></span>
+      <span class="st-n num"><%= row.goals_for %></span>
+      <span class="st-n num"><%= row.goals_against %></span>
+      <span class="st-n st-pts num"><%= row.points %></span>
+    <% end %>
+  <% end %>
+</div>
+<div class="st-legend">
+  <span><i class="dot qual"></i>前 2 名出线</span>
+  <span><i class="dot third"></i>第 3 名（争最佳第三名）</span>
+</div>

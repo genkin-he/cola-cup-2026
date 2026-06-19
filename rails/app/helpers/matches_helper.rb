@@ -49,6 +49,126 @@ module MatchesHelper
     team&.flag.presence || "🏳️"
   end
 
+  # Detail-page team cell (flag + name). A resolved team links to its fixtures
+  # page; an unresolved knockout slot shows a soft-link prediction (single team,
+  # or the full third-place candidate list) marked "预测", else a readable label.
+  def detail_team_cell(team, label)
+    return link_to(team_flag_name(team), team_path(team), class: "team") if team
+
+    case (prediction = slot_prediction(team, label))&.kind
+    when :team
+      link_to(safe_join([ row_flag_name(prediction.row), predicted_tag ]),
+              team_path(prediction.row.team_id), class: "team predicted")
+    when :candidates
+      tag.span(detail_candidates(prediction.candidates), class: "team predicted is-candidates")
+    else
+      tag.span(tag.span(humanize_slot_label(label), class: "nm placeholder"), class: "team")
+    end
+  end
+
+  # Schedule-card team cell inner (compact). Resolved team → flag + name; an
+  # unresolved knockout slot → predicted team / a row of candidate flags / a
+  # readable label fallback. Used by matches/_card_teams (broadcast-safe: only
+  # needs `match`, computes the predictor on its own).
+  def card_team_html(team, label)
+    return team_flag_name(team) if team
+
+    case (prediction = slot_prediction(team, label))&.kind
+    when :team
+      safe_join([ row_flag_name(prediction.row), predicted_tag ])
+    when :candidates
+      tag.span(safe_join(prediction.candidates.map { |c| tag.span(row_flag(c.row), class: "flag") }), class: "cand-flags")
+    else
+      tag.span(humanize_slot_label(label), class: "nm placeholder")
+    end
+  end
+
+  # The third-place candidate list for a knockout card's expandable disclosure,
+  # or nil when neither side is an unresolved third-place slot.
+  def card_candidate_prediction(match)
+    [ [ match.home_team, match.home_label ], [ match.away_team, match.away_label ] ]
+      .filter_map { |team, label| slot_prediction(team, label) }
+      .find { |prediction| prediction.kind == :candidates }&.candidates
+  end
+
+  # Per-render predictor; reused across every card on a page (like focus_match?).
+  def knockout_predictor
+    @_knockout_predictor ||= KnockoutPredictor.new
+  end
+
+  # Prediction for an unresolved slot, or nil (resolved team, blank label, or
+  # nothing inferable like a winner-of-match slot).
+  def slot_prediction(team, label)
+    return nil if team || label.blank?
+
+    knockout_predictor.predict(label)
+  end
+
+  # Readable fallback for a slot we can't predict yet: "A 组第2" / "A/B/C/D/F 组第3"
+  # / "M74 胜者" / the raw label.
+  def humanize_slot_label(label)
+    return "" if label.blank?
+
+    if (match = /\A([12])([A-L])\z/.match(label))
+      "#{match[2]} 组第#{match[1]}"
+    elsif label.start_with?("3") && label[1..].match?(%r{\A[A-L](/[A-L])*\z})
+      "#{label[1..]} 组第3"
+    elsif (match = /\AW(\d+)\z/.match(label))
+      "M#{match[1]} 胜者"
+    else
+      label
+    end
+  end
+
+  def predicted_tag
+    tag.span("预测", class: "pred-tag")
+  end
+
+  def team_flag_name(team)
+    safe_join([
+      tag.span(team_flag(team), class: "flag"),
+      tag.span(team.display_name, class: "nm")
+    ])
+  end
+
+  # Same, from a denormalized Standings::Row (knockout predictions).
+  def row_flag(row)
+    row.flag.presence || "🏳️"
+  end
+
+  def row_flag_name(row)
+    safe_join([
+      tag.span(row_flag(row), class: "flag"),
+      tag.span(row.display_name, class: "nm")
+    ])
+  end
+
+  # Vertical candidate list for the match-detail page: each third-place candidate
+  # (flag + name + group) ordered best-first, with a dashed qualification line —
+  # the same convention as the third-place ranking page — and a link to it.
+  def detail_candidates(candidates)
+    cut_drawn = false
+    rows = candidates.flat_map do |candidate|
+      items = []
+      if !candidate.qualified && !cut_drawn
+        cut_drawn = true
+        items << tag.div(tag.span("出线分界线"), class: "st-cutline cand-cut")
+      end
+      items << tag.div(class: [ "cand-row", candidate.qualified ? "in" : "out" ].join(" ")) do
+        safe_join([
+          tag.span(row_flag(candidate.row), class: "flag"),
+          tag.span(candidate.row.display_name, class: "nm"),
+          tag.span("#{candidate.group_letter} 组③", class: "g")
+        ])
+      end
+      items
+    end
+
+    tag.span("第三名候选", class: "nm cand-hint") +
+      tag.div(safe_join(rows), class: "cand-list detail-cand-list") +
+      link_to("查看完整第三名排行 →", third_place_path, class: "cand-more")
+  end
+
   # The "VS" / score middle token on a schedule card (shows the score as soon as
   # it is recorded).
   def match_score_token(match)

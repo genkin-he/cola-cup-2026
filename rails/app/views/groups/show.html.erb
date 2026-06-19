@@ -1,0 +1,20 @@
+<% content_for :title, "#{@group.name} 积分榜 · The Cola of Cup" %>
+<section>
+  <div class="detail-head">
+    <%= link_to root_path, class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+  </div>
+  <hr class="rule ink">
+
+  <div class="lbh">
+    <h1 class="disp"><%= @group.name %></h1>
+    <div class="sub">小组积分榜 · 前 2 名直接出线，第 3 名争夺最佳第三名席位</div>
+  </div>
+
+  <%= render "standings/table", group: @group %>
+
+  <div class="daylabel"><span class="big">小组赛战绩</span></div>
+  <hr class="rule">
+  <%= render "matches/match_list", matches: @group.matches %>
+</section>

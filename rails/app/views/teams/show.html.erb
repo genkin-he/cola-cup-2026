@@ -1,0 +1,24 @@
+<% content_for :title, "#{@team.display_name} · 赛程 · The Cola of Cup" %>
+<section>
+  <div class="detail-head">
+    <%= link_to root_path, class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+    <% group_match = @matches.find { |match| match.group_name.present? } %>
+    <% if group_match && (letter = match_group_letter(group_match)) %>
+      <%= link_to "#{letter} 组积分榜", group_path(letter), class: "back-btn" %>
+    <% end %>
+  </div>
+  <hr class="rule ink">
+
+  <div class="team-hero">
+    <span class="flag"><%= team_flag(@team) %></span>
+    <h1 class="disp"><%= @team.display_name %></h1>
+    <% if @team.name_zh.present? && @team.name_zh != @team.name %>
+      <span class="sub"><%= @team.name %></span>
+    <% end %>
+  </div>
+
+  <hr class="rule">
+  <%= render "matches/match_list", matches: @matches %>
+</section>

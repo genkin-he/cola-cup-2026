@@ -11,6 +11,10 @@ Rails.application.routes.draw do
     resource :vote, only: [ :create, :destroy ]
   end
 
+  resources :teams, only: [ :show ]
+  get "/groups/:letter", to: "groups#show", as: :group, constraints: { letter: /[A-L]/ }
+  get "/third-place", to: "standings#third_place", as: :third_place
+
   get "/leaderboard", to: "leaderboards#show", as: :leaderboard
   resources :users, only: [ :show ]
   get "/me", to: "profiles#show", as: :me

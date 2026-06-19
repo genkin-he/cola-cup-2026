@@ -1,0 +1,51 @@
+<% content_for :title, "第三名出线排行 · The Cola of Cup" %>
+<section>
+  <div class="detail-head">
+    <%= link_to root_path, class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+  </div>
+  <hr class="rule ink">
+
+  <div class="lbh">
+    <h1 class="disp">第三名出线</h1>
+    <div class="sub">12 个小组第三名中成绩最好的 <%= @slots %> 个晋级 32 强 · 排序：积分 › 净胜球 › 进球数</div>
+  </div>
+
+  <% if @entries.empty? %>
+    <p class="standings-empty">小组赛尚未产生第三名排名</p>
+  <% else %>
+    <div class="standings third-place">
+      <div class="st-row st-head">
+        <span class="st-rk">#</span>
+        <span class="st-grp">组</span>
+        <span class="st-team">球队</span>
+        <span class="st-n" title="场次">场</span>
+        <span class="st-n st-gd" title="净胜球">净</span>
+        <span class="st-n" title="进球">进</span>
+        <span class="st-n st-pts" title="积分">分</span>
+      </div>
+      <% @entries.each do |entry| %>
+        <% if entry.rank == @slots + 1 %>
+          <div class="st-cutline"><span>出线分界线 · 以上晋级</span></div>
+        <% end %>
+        <%= link_to group_path(entry.letter), class: "st-row #{entry.qualified ? "qual" : "out"}" do %>
+          <span class="st-rk num"><%= entry.rank %></span>
+          <span class="st-grp"><%= entry.letter %></span>
+          <span class="st-team">
+            <span class="flag"><%= row_flag(entry.row) %></span>
+            <span class="nm"><%= entry.row.display_name %></span>
+          </span>
+          <span class="st-n num"><%= entry.row.played %></span>
+          <span class="st-n st-gd num"><%= format_goal_diff(entry.row.goal_diff) %></span>
+          <span class="st-n num"><%= entry.row.goals_for %></span>
+          <span class="st-n st-pts num"><%= entry.row.points %></span>
+        <% end %>
+      <% end %>
+    </div>
+    <div class="st-legend">
+      <span><i class="dot qual"></i>晋级 32 强</span>
+      <span><i class="dot out"></i>淘汰</span>
+    </div>
+  <% end %>
+</section>

@@ -1,0 +1,30 @@
+<%# Day-grouped match list reused by the team and group pages. Unlike the home
+    schedule's _day_section it shows every day (past included) and carries no
+    schedule-filter wiring — it is a static chronological history + fixtures
+    list. Cards reuse matches/_match_card. Needs @tallies / @market_odds /
+    @voted_match_ids in scope (assign_schedule_data). %>
+<% if matches.empty? %>
+  <p class="standings-empty">暂无比赛</p>
+<% else %>
+  <% today_key = day_key(Time.current) %>
+  <% matches.group_by { |match| day_key(match.kickoff_at) }.each do |key, day_matches| %>
+    <% primary, is_today = relative_day_heading(key, today_key) %>
+    <div class="daylabel">
+      <span class="big<%= " today" if is_today %>"><%= primary || format_day_label(day_matches.first.kickoff_at) %></span>
+      <span class="sm"><% if primary %><%= format_day_label(day_matches.first.kickoff_at) %> · <% end %><%= day_matches.size %> 场</span>
+    </div>
+    <hr class="rule">
+    <div class="day-rows">
+      <% day_matches.each do |match| %>
+        <div id="match_card_<%= match.id %>" class="mrow-anchor">
+          <%= render "matches/match_card",
+                match: match,
+                tally: @tallies[match.id] || Vote.empty_tally,
+                market: @market_odds[match.id],
+                voted: @voted_match_ids.include?(match.id) %>
+          <hr class="rule">
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
