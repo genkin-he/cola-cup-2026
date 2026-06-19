@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_12_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_19_100000) do
   create_table "accounts", force: :cascade do |t|
     t.string "avatar_url"
     t.datetime "created_at", null: false
@@ -21,6 +21,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_100000) do
     t.string "username"
     t.index ["provider", "provider_account_id"], name: "index_accounts_on_provider_and_provider_account_id", unique: true
     t.index ["user_id"], name: "index_accounts_on_user_id"
+  end
+
+  create_table "goals", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "match_id", null: false
+    t.integer "minute"
+    t.boolean "own_goal", default: false, null: false
+    t.boolean "penalty", default: false, null: false
+    t.string "player_name", null: false
+    t.integer "team_id"
+    t.datetime "updated_at", null: false
+    t.index ["match_id"], name: "index_goals_on_match_id"
+    t.index ["player_name", "team_id"], name: "index_goals_on_player_name_and_team_id"
+    t.index ["team_id"], name: "index_goals_on_team_id"
   end
 
   create_table "ledger_entries", force: :cascade do |t|
@@ -155,6 +169,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_12_100000) do
   end
 
   add_foreign_key "accounts", "users"
+  add_foreign_key "goals", "matches"
+  add_foreign_key "goals", "teams"
   add_foreign_key "ledger_entries", "matches"
   add_foreign_key "ledger_entries", "users"
   add_foreign_key "matches", "settlements"

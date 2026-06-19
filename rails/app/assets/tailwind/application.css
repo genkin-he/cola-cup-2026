@@ -2516,6 +2516,66 @@ main {
   grid-template-columns: 26px 26px minmax(0, 1fr) repeat(4, 26px);
   gap: 0 6px;
 }
+/* top-scorer board: rank | player (flag + name + country) | goals | penalties */
+.standings.scorers .st-row {
+  grid-template-columns: 30px minmax(0, 1fr) 40px 40px;
+  gap: 0 6px;
+}
+.standings.scorers .st-team .meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.standings.scorers .st-team .club {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mid);
+  line-height: 1.15;
+}
+
+/* match-detail result panel: per-match goal log (scorer · minute · team) */
+.goal-log {
+  list-style: none;
+  margin: 8px 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.goal-log li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.goal-log .flag {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.goal-log .who {
+  font-weight: 700;
+  min-width: 0;
+}
+.goal-log .min {
+  margin-left: auto;
+  color: var(--mid);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.goal-log .gtag {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+.goal-log .gtag.pk {
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 20%, transparent);
+}
+.goal-log .gtag.og {
+  color: var(--red);
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+}
 a.st-row {
   cursor: pointer;
   transition: background 0.15s ease;

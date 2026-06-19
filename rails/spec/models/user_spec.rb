@@ -108,7 +108,7 @@ RSpec.describe User do
       expect(ids).not_to include(abstainer.id)
     end
 
-    it "神域榜: a high-volume record outranks a lucky small sample (mean pulled down by cold users)" do
+    it "神预榜: a high-volume record outranks a lucky small sample (mean pulled down by cold users)" do
       proven = create(:user)
       lucky = create(:user)
       cold_a = create(:user)

@@ -2,7 +2,29 @@
 <% votable = status == :open %>
 <% error = local_assigns[:error] %>
 <div class="vp" id="vote_panel_<%= match.id %>">
-  <% if !has_identity %>
+  <% if match.result.present? || match.goals.exists? %>
+    <%# Match over: the lock / your-pick text is moot, so this panel becomes the
+        match's goal log (scorer · minute · team) plus a link to the full
+        top-scorer board. Goals come from openfootball and can lag the score,
+        hence the 待更新 fallback. Shown to everyone, signed in or not. %>
+    <h2 class="disp">本场进球</h2>
+    <% goal_log = match.goal_log %>
+    <% if goal_log.any? %>
+      <ul class="goal-log">
+        <% goal_log.each do |g| %>
+          <li>
+            <span class="flag"><%= g.team&.flag.presence || "🏳️" %></span>
+            <span class="who"><%= g.player_name %></span>
+            <% if g.own_goal %><span class="gtag og">乌龙</span><% elsif g.penalty %><span class="gtag pk">点球</span><% end %>
+            <% if g.minute %><span class="min"><%= g.minute %>'</span><% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="signed-lock">本场进球数据待更新。</p>
+    <% end %>
+    <%= link_to "射手榜 →", scorers_path, class: "cand-more" %>
+  <% elsif !has_identity %>
     <h2 class="disp">想预测？</h2>
     <p class="signed-lock">
       先去 <%= link_to "设置身份", identity_path, style: "color: var(--red); border-bottom: 1px solid color-mix(in srgb,var(--red) 45%,transparent)" %>。

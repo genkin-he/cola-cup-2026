@@ -2,11 +2,16 @@
 <section>
   <%= turbo_stream_from "match", @match %>
   <div class="detail-head">
-    <%= link_to root_path(anchor: "match_card_#{@match.id}"), class: "back-btn" do %>
+    <%# A finished match lives in the 已结束 tab, so send the back link there. %>
+    <%= link_to root_path(tab: (@match.result.present? ? "done" : nil), anchor: "match_card_#{@match.id}"), class: "back-btn" do %>
       <span class="bk-arrow">←</span> 返回赛程
     <% end %>
     <% group_letter = match_group_letter(@match) %>
-    <span class="detail-stage"><%= Match.stage_label(@match.stage) %><% if @match.group_name.present? %> · <% if group_letter %><%= link_to @match.group_name, group_path(group_letter), class: "stage-group-link" %><% else %><%= @match.group_name %><% end %><% end %></span>
+    <% if group_letter %>
+      <%= link_to "#{group_letter} 组积分榜", group_path(group_letter), class: "back-btn" %>
+    <% else %>
+      <span class="detail-stage"><%= Match.stage_label(@match.stage) %><% if @match.group_name.present? %> · <%= @match.group_name %><% end %></span>
+    <% end %>
     <%= status_badge(status) %>
   </div>
   <hr class="rule">

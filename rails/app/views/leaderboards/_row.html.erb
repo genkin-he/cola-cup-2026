@@ -19,7 +19,7 @@
     <span class="n">
       <% case board.metric %>
       <% when :hit_rate %>
-        <div class="b pos"><span class="lbl">神域分</span><%= rank_score ? format('%.1f', rank_score) : "—" %></div>
+        <div class="b pos"><span class="lbl">神预分</span><%= rank_score ? format('%.1f', rank_score) : "—" %></div>
         <div class="st">命中率 <%= hit_pct ? "#{hit_pct}%" : "—" %></div>
       <% when :miss_rate %>
         <div class="b neg"><span class="lbl">毒奶分</span><%= rank_score ? format('%.1f', rank_score) : "—" %></div>

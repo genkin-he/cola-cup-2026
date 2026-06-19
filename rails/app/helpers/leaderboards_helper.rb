@@ -2,7 +2,7 @@ module LeaderboardsHelper
   # The headline ranking score (0–100) for the accuracy boards — the exact value
   # leaderboard_for ranks by, so the displayed number always matches the order.
   # Returns nil for boards ranked by a directly displayed metric (战绩 / 兑换).
-  # `mean` is the global hit rate, needed only by 神域榜's Bayesian score.
+  # `mean` is the global hit rate, needed only by 神预榜's Bayesian score.
   def board_rank_score(board, entry, mean)
     case board.metric
     when :hit_rate

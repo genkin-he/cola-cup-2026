@@ -9,7 +9,7 @@
     <% User::BOARDS.each do |board| %>
       <%= link_to leaderboard_path(board: (board.key unless board == User::DEFAULT_BOARD)),
                   class: ("on" if board == @board) do %>
-        <%= board.emoji %> <%= board.name.delete_suffix("榜") %>
+        <%= board.name %>
       <% end %>
     <% end %>
   </nav>

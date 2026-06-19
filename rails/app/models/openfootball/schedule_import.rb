@@ -127,7 +127,8 @@ module Openfootball
         matches.each do |match|
           home_id = name_to_id[match["team1"]]
           away_id = name_to_id[match["team2"]]
-          Match.find_or_initialize_by(external_key: external_key(match)).update!(
+          record = Match.find_or_initialize_by(external_key: external_key(match))
+          record.update!(
             group_name: match["group"],
             stage: map_stage(match["round"]),
             home_team_id: home_id,
@@ -137,7 +138,41 @@ module Openfootball
             venue: match["ground"],
             kickoff_at: parse_kickoff(match["date"], match["time"])
           )
+          sync_goals(record, match, home_id, away_id) if match.key?("score")
         end
+      end
+    end
+
+    # openfootball lists goalscorers per side once a match is played: goals1
+    # belongs to team1 (our home), goals2 to team2 (our away). We deliberately
+    # never write the match score here — football-data.org owns home_score /
+    # away_score / result — only the goal events that feed the top-scorer board.
+    # Own goals are kept flagged so the board can exclude them from a player's
+    # tally. Goals are replaced wholesale per match so re-runs and upstream
+    # corrections stay idempotent.
+    def sync_goals(record, match, home_id, away_id)
+      record.goals.delete_all
+      rows = goal_rows(match["goals1"], home_id) + goal_rows(match["goals2"], away_id)
+      return if rows.empty?
+
+      Goal.insert_all(rows.map { |row| row.merge(match_id: record.id) })
+    end
+
+    def goal_rows(goals, team_id)
+      now = Time.current
+      Array(goals).filter_map do |goal|
+        name = goal["name"]
+        next if name.blank?
+
+        {
+          team_id: team_id,
+          player_name: name,
+          minute: goal["minute"]&.to_i,
+          penalty: goal["penalty"] == true,
+          own_goal: goal["owngoal"] == true,
+          created_at: now,
+          updated_at: now
+        }
       end
     end
 

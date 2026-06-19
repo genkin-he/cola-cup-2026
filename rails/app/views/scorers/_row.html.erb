@@ -1,0 +1,19 @@
+<% rank = offset + row_counter + 1 %>
+<% cells = capture do %>
+  <span class="st-rk num"><%= rank %></span>
+  <span class="st-team">
+    <span class="flag"><%= row_flag(row) %></span>
+    <span class="meta">
+      <span class="nm"><%= row.player_name %></span>
+      <span class="club"><%= row.display_name %></span>
+    </span>
+  </span>
+  <span class="st-n st-pts num"><%= row.goals %></span>
+  <span class="st-n num"><%= row.penalties %></span>
+<% end %>
+<% dom_id = "scorer-rank-#{rank}" %>
+<% if row.team_id %>
+  <%= link_to cells, team_path(row.team_id), id: dom_id, class: "st-row" %>
+<% else %>
+  <div id="<%= dom_id %>" class="st-row"><%= cells %></div>
+<% end %>

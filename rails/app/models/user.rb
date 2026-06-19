@@ -16,7 +16,7 @@ class User < ApplicationRecord
 
   # Score tuning for the accuracy boards. Both algorithms are sample-size aware so
   # a lucky 3/3 never outranks a proven 17/20.
-  #   神域榜  Bayesian shrinkage: (wins + C·m) / (bets + C), m = global mean hit rate
+  #   神预榜  Bayesian shrinkage: (wins + C·m) / (bets + C), m = global mean hit rate
   #   毒奶榜  Wilson lower bound of the loss rate at 95% confidence (z = 1.96)
   BAYESIAN_PRIOR_BETS = 5
   WILSON_Z = 1.96
@@ -51,7 +51,7 @@ class User < ApplicationRecord
       formula: nil
     ),
     Board.new(
-      key: "oracle", name: "神域榜", emoji: "🔮", metric: :hit_rate,
+      key: "oracle", name: "神预榜", emoji: "🔮", metric: :hit_rate,
       subtitle: "命中率最高 · 贝叶斯加权，场数越多越稳",
       explainer: "按预测命中率排名，但做了「场数」修正：光靠手气猜中几场不够，要又准又多才稳。" \
                  "只猜 1 场全中不会直接霸榜，会先按全场平均命中率打个折；预测场数越多，你的真实水平占比越高。",
@@ -60,7 +60,7 @@ class User < ApplicationRecord
     Board.new(
       key: "jinx", name: "毒奶榜", emoji: "🥛", metric: :miss_rate,
       subtitle: "押谁谁输 · 最稳定押错的人",
-      explainer: "神域榜的反面：按「押错率」排名，同样做了场数修正。偶尔押错一两次不算毒奶，" \
+      explainer: "神预榜的反面：按「押错率」排名，同样做了场数修正。偶尔押错一两次不算毒奶，" \
                  "要稳定地押谁谁输、且场数够多，才能名列前茅。",
       formula: "Wilson 置信区间下界（押错率，z = 1.96），公开算法，同 Reddit 评论排序。"
     ),

@@ -14,6 +14,26 @@ RSpec.describe "Read-only pages", type: :request do
       expect(response.body).to include(match.home_team.display_name)
       expect(response.body).to include("match_card_#{match.id}")
     end
+
+    it "links to the group standings and scorer board from the subtabs" do
+      create(:match)
+      get root_path
+      expect(response.body).to include("小组积分榜", "射手榜")
+      expect(response.body).to include(groups_path, scorers_path)
+    end
+  end
+
+  describe "GET /groups" do
+    it "lists every group's standings table" do
+      alpha = create(:team, name: "Alpha", name_zh: "阿尔法")
+      beta = create(:team, name: "Beta", name_zh: "贝塔")
+      create(:match, :settled, stage: "group", group_name: "Group A",
+        home_team: alpha, away_team: beta, home_score: 2, away_score: 0, result: "home")
+
+      get groups_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("小组积分榜", "Group A", "阿尔法", "贝塔")
+    end
   end
 
   describe "GET /matches/:id" do
@@ -39,6 +59,44 @@ RSpec.describe "Read-only pages", type: :request do
              taken_at: Time.utc(2026, 6, 13, 0, 0))
       get match_path(match)
       expect(response.body).to include("锁定于 6/13 08:00")
+    end
+
+    it "turns a finished match's panel into a goal log instead of the lock notice" do
+      user = create(:user)
+      germany = create(:team, name: "Germany", name_zh: "德国", flag: "🇩🇪")
+      curacao = create(:team, name: "Curaçao", name_zh: "库拉索", flag: "🇨🇼")
+      match = create(:match, :settled, group_name: "Group E",
+        home_team: germany, away_team: curacao, home_score: 2, away_score: 1)
+      create(:vote, match: match, user: user, pick: "home", stake: match.stake)
+      Goal.create!(match: match, team: germany, player_name: "Havertz", minute: 45, penalty: true)
+      Goal.create!(match: match, team: curacao, player_name: "OwnGuy", minute: 70, own_goal: true)
+      sign_in user
+
+      get match_path(match)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("本场进球", "Havertz", "点球", "乌龙", scorers_path)
+      expect(response.body).not_to include("已锁定") # lock notice replaced by the goal log
+      expect(response.body).not_to include("你押了") # personal pick stays in the ledger, not here
+    end
+
+    it "links the group breadcrumb to the standings as a button" do
+      match = create(:match, group_name: "Group D")
+      get match_path(match)
+      expect(response.body).to include("D 组积分榜")
+      expect(response.body).to include(group_path("D"))
+    end
+
+    it "sends the back link to the 已结束 tab for a finished match" do
+      match = create(:match, :settled)
+      get match_path(match)
+      expect(response.body).to include(root_path(tab: "done", anchor: "match_card_#{match.id}"))
+    end
+
+    it "keeps the back link on the default tab for an unfinished match" do
+      match = create(:match)
+      get match_path(match)
+      expect(response.body).to include(root_path(anchor: "match_card_#{match.id}"))
+      expect(response.body).not_to include("tab=done")
     end
   end
 
@@ -86,7 +144,7 @@ RSpec.describe "Read-only pages", type: :request do
       create(:ledger_entry, user: user, won: true)
 
       get leaderboard_path(board: "oracle")
-      expect(response.body).to include("怎么算的", "贝叶斯加权", "IMDB", "神域分")
+      expect(response.body).to include("怎么算的", "贝叶斯加权", "IMDB", "神预分")
 
       get leaderboard_path(board: "jinx")
       expect(response.body).to include("Wilson 置信区间下界", "Reddit", "毒奶分")
@@ -96,6 +154,46 @@ RSpec.describe "Read-only pages", type: :request do
       get leaderboard_path(board: "nope")
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("镰刀榜")
+    end
+  end
+
+  describe "GET /scorers" do
+    it "ranks players by goals and leaves own goals off the board" do
+      brazil = create(:team, name: "Brazil", name_zh: "巴西", flag: "🇧🇷")
+      match = create(:match)
+      Goal.create!(match: match, team: brazil, player_name: "内马尔", minute: 9)
+      Goal.create!(match: match, team: brazil, player_name: "内马尔", minute: 70, penalty: true)
+      Goal.create!(match: match, team: brazil, player_name: "乌龙哥", minute: 80, own_goal: true)
+
+      get scorers_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("射手榜", "内马尔", "巴西")
+      expect(response.body).not_to include("乌龙哥")
+    end
+
+    it "shows the empty state when no goals are recorded" do
+      get scorers_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("还没有进球数据")
+    end
+
+    it "paginates the scorer list 20 per page with an infinite-scroll sentinel" do
+      match = create(:match)
+      21.times do |i|
+        team = create(:team, name: "Squad#{format('%02d', i)}", name_zh: "队#{format('%02d', i)}")
+        Goal.create!(match: match, team: team, player_name: "Player#{format('%02d', i)}", minute: i + 1)
+      end
+
+      get scorers_path
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("data-infinite-scroll-url-value")
+      expect(response.body).to include(scorers_path(page: 2))
+      expect(response.body.scan('class="st-row"').size).to eq(20) # 20 data rows (header is st-head)
+
+      get scorers_path(page: 2)
+      expect(response).to have_http_status(:ok)
+      expect(response.body).not_to include("<html") # layout-less fragment
+      expect(response.body).not_to include("data-next-url") # last page, no further marker
     end
   end
 

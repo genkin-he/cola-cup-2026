@@ -12,8 +12,10 @@ Rails.application.routes.draw do
   end
 
   resources :teams, only: [ :show ]
+  get "/groups", to: "groups#index", as: :groups
   get "/groups/:letter", to: "groups#show", as: :group, constraints: { letter: /[A-L]/ }
   get "/third-place", to: "standings#third_place", as: :third_place
+  get "/scorers", to: "scorers#index", as: :scorers
 
   get "/leaderboard", to: "leaderboards#show", as: :leaderboard
   resources :users, only: [ :show ]

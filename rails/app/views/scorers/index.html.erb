@@ -1,0 +1,35 @@
+<% content_for :title, "射手榜 · The Cola of Cup" %>
+<section>
+  <div class="detail-head">
+    <%= link_to root_path, class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+    <%= link_to "第三名出线排行", third_place_path, class: "back-btn" %>
+  </div>
+  <hr class="rule ink">
+
+  <div class="lbh">
+    <h1 class="disp">射手榜</h1>
+    <div class="sub">本届进球榜 · 数据来自 openfootball · 乌龙球不计个人 · 排序：进球 › 点球少者优先 › 姓名</div>
+  </div>
+
+  <% if @rows.empty? %>
+    <p class="standings-empty">还没有进球数据</p>
+  <% else %>
+    <div class="standings scorers">
+      <div class="st-row st-head">
+        <span class="st-rk">#</span>
+        <span class="st-team">球员</span>
+        <span class="st-n st-pts" title="进球数">进</span>
+        <span class="st-n" title="其中点球">点</span>
+      </div>
+      <div id="scorer_rows">
+        <%= render partial: "scorers/row", collection: @rows, as: :row, locals: { offset: @offset } %>
+        <% if @next_page %>
+          <div class="scroll-sentinel" data-controller="infinite-scroll"
+               data-infinite-scroll-url-value="<%= scorers_path(page: @next_page) %>"></div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</section>

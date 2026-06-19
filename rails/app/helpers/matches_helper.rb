@@ -77,7 +77,10 @@ module MatchesHelper
     when :team
       safe_join([ row_flag_name(prediction.row), predicted_tag ])
     when :candidates
-      tag.span(safe_join(prediction.candidates.map { |c| tag.span(row_flag(c.row), class: "flag") }), class: "cand-flags")
+      safe_join([
+        tag.span(safe_join(prediction.candidates.map { |c| tag.span(row_flag(c.row), class: "flag") }), class: "cand-flags"),
+        predicted_tag
+      ])
     else
       tag.span(humanize_slot_label(label), class: "nm placeholder")
     end

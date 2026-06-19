@@ -1,0 +1,32 @@
+<% content_for :title, "小组积分榜 · The Cola of Cup" %>
+<section>
+  <div class="detail-head">
+    <%= link_to root_path, class: "back-btn" do %>
+      <span class="bk-arrow">←</span> 返回赛程
+    <% end %>
+    <%= link_to "第三名出线排行", third_place_path, class: "back-btn" %>
+    <%= link_to "射手榜", scorers_path, class: "back-btn" %>
+  </div>
+  <hr class="rule ink">
+
+  <div class="lbh">
+    <h1 class="disp">小组积分榜</h1>
+    <div class="sub">全部 12 个小组 · 前 2 名直接出线，第 3 名争夺最佳第三名席位</div>
+  </div>
+
+  <% if @groups.empty? %>
+    <p class="standings-empty">小组赛尚未开始</p>
+  <% else %>
+    <div class="st-legend">
+      <span><i class="dot qual"></i>前 2 名出线</span>
+      <span><i class="dot third"></i>第 3 名（争最佳第三名）</span>
+    </div>
+    <% @groups.each do |group| %>
+      <div class="daylabel">
+        <span class="big"><%= group.name %></span>
+        <%= link_to "查看小组 →", group_path(group.letter), class: "sm" %>
+      </div>
+      <%= render "standings/table", group: group, legend: false %>
+    <% end %>
+  <% end %>
+</section>

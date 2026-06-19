@@ -32,7 +32,9 @@
     <% end %>
   <% end %>
 </div>
-<div class="st-legend">
-  <span><i class="dot qual"></i>前 2 名出线</span>
-  <span><i class="dot third"></i>第 3 名（争最佳第三名）</span>
-</div>
+<% if local_assigns.fetch(:legend, true) %>
+  <div class="st-legend">
+    <span><i class="dot qual"></i>前 2 名出线</span>
+    <span><i class="dot third"></i>第 3 名（争最佳第三名）</span>
+  </div>
+<% end %>

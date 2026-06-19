@@ -42,6 +42,7 @@ class Match < ApplicationRecord
   has_many :votes, dependent: :destroy
   has_many :ledger_entries, dependent: :destroy
   has_many :odds_snapshots, dependent: :destroy
+  has_many :goals, dependent: :destroy
   has_one :poly_market, dependent: :destroy
 
   validates :external_key, presence: true, uniqueness: true
@@ -144,6 +145,13 @@ class Match < ApplicationRecord
 
   def allows_draw?
     !knockout?
+  end
+
+  # Goalscorers for this match, earliest first — drives the result panel's goal
+  # log on the detail page. Goals come from openfootball (Openfootball::ScheduleImport),
+  # independent of the football-data.org score, so the list can lag the score.
+  def goal_log
+    goals.includes(:team).order(:minute, :id)
   end
 
   def valid_picks

@@ -11,8 +11,16 @@ export default class extends Controller {
 
   connect() {
     this.syncTabVisibility()
-    this.filter = this.defaultFilter()
+    this.filter = this.initialFilter()
     this.apply()
+  }
+
+  // Honor a ?tab= hint (set by the back link from a finished match) when that
+  // tab actually has matches; otherwise fall back to the content-based default.
+  initialFilter() {
+    const requested = new URLSearchParams(window.location.search).get("tab")
+    if (requested && this.available[requested]) return requested
+    return this.defaultFilter()
   }
 
   select(event) {

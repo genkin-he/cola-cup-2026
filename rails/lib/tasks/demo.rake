@@ -52,6 +52,37 @@ namespace :demo do
     puts "      the daily ImportScheduleJob (or cup:import_schedule) restores real times."
   end
 
+  desc "Dev only: pull openfootball scores+results+goals so finished matches render (prod scores come from football-data.org)"
+  task results: :environment do
+    abort "demo:results is development-only" unless Rails.env.development?
+
+    # Goals + fixtures (idempotent). In production this same call runs every few
+    # hours via ImportScheduleJob and backfills goals for every played match.
+    Openfootball::ScheduleImport.run(source: :network)
+
+    # openfootball also carries the final score per played match; football-data.org
+    # owns scores in production, so we only borrow them here (dev) to give finished
+    # matches a result/score to render. update_all bypasses settlement/broadcast.
+    payload = HttpJson.get(Openfootball::ScheduleImport::SCHEDULE_URL)
+    by_key = Match.pluck(:external_key, :id).to_h
+    updated = 0
+    Array(payload["matches"]).each do |match|
+      home, away = match.dig("score", "ft")
+      next unless home.is_a?(Integer) && away.is_a?(Integer)
+
+      key = match["num"] ? "m:#{match["num"]}" : "#{match["round"]}|#{match["date"]}|#{match["team1"]}|#{match["team2"]}"
+      id = by_key[key]
+      next unless id
+
+      result = home > away ? "home" : (home < away ? "away" : "draw")
+      Match.where(id: id).update_all(home_score: home, away_score: away, result: result, result_at: Time.current)
+      updated += 1
+    end
+
+    puts "[demo:results] scores+results set on #{updated} played matches; goals=#{Goal.count}"
+    puts "note: dev-only — production scores come from football-data.org (cup:sync_live)"
+  end
+
   desc "Seed demo users/votes/one settled match/one redemption for local testing (dev only)"
   task seed: :environment do
     abort "demo:seed is development-only" unless Rails.env.development?
