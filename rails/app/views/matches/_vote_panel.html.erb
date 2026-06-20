@@ -84,14 +84,19 @@
         </button>
       <% end %>
 
-      <div class="vp-foot">
-        <% if next_match_id %>
-          <%= link_to match_path(next_match_id), class: "vp-back" do %>下一场 <span class="bk-arrow">→</span><% end %>
-        <% else %>
-          <%= link_to root_path(anchor: "match_card_#{match.id}"), class: "vp-back" do %><span class="bk-arrow">←</span> 返回赛程<% end %>
-        <% end %>
-        <span class="vp-hint">开赛前可随时改或<% if current_pick %><%= button_to "取消预测", match_vote_path(match), method: :delete, class: "vp-cancel-link", form: { style: "display:inline" } %><% else %>取消预测<% end %></span>
-      </div>
     </div>
   <% end %>
+
+  <%# Match-to-match navigation shows in every state (locked / over / signed-out
+      too); the change-or-cancel hint only while a vote is still open. %>
+  <div class="vp-foot">
+    <% if next_match_id %>
+      <%= link_to match_path(next_match_id), class: "vp-back" do %>下一场 <span class="bk-arrow">→</span><% end %>
+    <% else %>
+      <%= link_to root_path(anchor: "match_card_#{match.id}"), class: "vp-back" do %><span class="bk-arrow">←</span> 返回赛程<% end %>
+    <% end %>
+    <% if votable %>
+      <span class="vp-hint">开赛前可随时改或<% if user_vote %><%= button_to "取消预测", match_vote_path(match), method: :delete, class: "vp-cancel-link", form: { style: "display:inline" } %><% else %>取消预测<% end %></span>
+    <% end %>
+  </div>
 </div>
