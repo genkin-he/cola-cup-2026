@@ -29,8 +29,9 @@ services:
       OIDC_ISSUER: ${OIDC_ISSUER:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
-      # OIDC login button label (default: "OIDC 登录").
-      OIDC_DISPLAY_NAME: ${OIDC_DISPLAY_NAME:-}
+      # OIDC login button label (this deployment defaults to the Longbridge brand;
+      # AuthProviders itself falls back to "OIDC 登录" when this is blank).
+      OIDC_DISPLAY_NAME: ${OIDC_DISPLAY_NAME:-用 Longbridge 登录}
       # Settlement accounts (X usernames or numeric ids, comma-separated).
       SETTLER_USERNAMES: ${SETTLER_USERNAMES:-}
       # football-data.org token for auto score sync (optional; manual entry otherwise).
