@@ -25,9 +25,9 @@ class KnockoutPredictor
     @tables = Standings::Group.tables
     ranked = Standings::ThirdPlace.ranked(@tables)
     @third_rank = ranked.index_by { |entry| entry.row.team_id }
-    @slot_assignment = assign_thirds_to_slots(ranked)
     index_teams
     load_knockout
+    @slot_assignment = assign_thirds_to_slots(ranked)
   end
 
   # A Prediction, or nil when nothing can be inferred yet (a slot in a round
@@ -87,53 +87,36 @@ class KnockoutPredictor
     candidates
   end
 
-  # Mirror FIFA's Annex C principle: the eight qualifying third-placed teams fill
-  # the eight third-place slots one-to-one, each from a group its slot allows (so
-  # the same third never opposes more than one winner). We don't have the official
-  # 495-row table, so we compute *a* valid assignment for the current qualifiers —
-  # enough for a live prediction the real draw later overrides. Returns
-  # {slot_label => group_letter}, or {} when no full assignment exists yet (fewer
-  # than eight thirds decided, or no bijection); callers then fall back to plain
-  # cross-group order.
+  # FIFA's Annex C allocation: the eight qualifying third-placed teams fill the
+  # eight third-place slots one-to-one (each from a group its slot allows, never
+  # its own), looked up from the official 495-row table by the set of qualifying
+  # groups. Returns {slot_label => group_letter}, or {} when fewer than eight
+  # thirds are decided yet (or the combination is missing); callers then fall back
+  # to plain cross-group order.
   def assign_thirds_to_slots(ranked)
     qualifying = ranked.select(&:qualified).map(&:letter)
     return {} unless qualifying.size == Standings::ThirdPlace::QUALIFYING_SLOTS
 
-    slots = third_slot_labels.map { |label| [ label, label_groups(label) & qualifying ] }
-    return {} unless slots.size == qualifying.size
+    assignment = ThirdPlaceAllocation.assignment(qualifying)
+    return {} unless assignment
 
-    match_slots(slots.sort_by { |(label, groups)| [ groups.size, label ] }) || {}
+    assignment.filter_map { |match_num, group_letter|
+      label = third_label_for(match_num)
+      [ label, group_letter ] if label
+    }.to_h
   end
 
-  # The knockout slot labels that resolve to a best-third (e.g. "3E/H/I/J/K").
-  def third_slot_labels
-    Match.where(stage: "r32").pluck(:home_label, :away_label).flatten
-      .compact.select { |label| THIRD_RE.match?(label) }.uniq
+  # The best-third slot label a given knockout match number hosts (74 ->
+  # "3A/B/C/D/F"), or nil if that match isn't loaded or isn't a third-place slot.
+  def third_label_for(match_num)
+    match = @ko_by_num[match_num]
+    return nil unless match
+
+    [ match.home_label, match.away_label ].find { |label| THIRD_RE.match?(label.to_s) }
   end
 
   def label_groups(label)
     THIRD_RE.match(label)[1].split("/")
-  end
-
-  # Depth-first perfect matching of slots to groups (slots pre-sorted fewest
-  # options first, so forced picks resolve early); deterministic, returns nil
-  # when no bijection exists.
-  def match_slots(slots, index = 0, used = {}, result = {})
-    return result.dup if index == slots.size
-
-    label, groups = slots[index]
-    groups.each do |group|
-      next if used[group]
-
-      used[group] = true
-      result[label] = group
-      matched = match_slots(slots, index + 1, used, result)
-      return matched if matched
-
-      used.delete(group)
-      result.delete(label)
-    end
-    nil
   end
 
   # team_id => its group Row / group letter, for resolving knockout participants

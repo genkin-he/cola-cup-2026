@@ -52,28 +52,27 @@ RSpec.describe KnockoutPredictor do
       expect(prediction.candidates.first).to have_attributes(rank: 1, qualified: true)
     end
 
-    it "leads each third-place slot with a distinct, allowed, qualifying third" do
+    it "leads each third-place slot with its official Annex C opponent" do
       # All twelve groups present, with a clean 1..12 cross-group third ordering
-      # (more conceded -> worse goal difference -> lower rank), so exactly the
-      # top eight qualify. The eight real Round-of-32 third-place slots then get a
-      # one-to-one allocation: each qualifying third LEADS exactly one slot (it may
-      # still sit deeper in another slot's pool — only the lead must be unique).
+      # (more conceded -> worse goal difference -> lower rank), so the top eight
+      # (A–H) qualify. For the qualifying set ABCDEFGH the official Annex C row is
+      # "CFHEBAGD" over matches 74/77/79/80/81/82/85/87.
       letters = %w[A B C D E F G H I J K L]
       letters.each_with_index { |letter, i| group_with(letter, third_concedes: i + 1) }
+      match_order = [ 74, 77, 79, 80, 81, 82, 85, 87 ]
       slot_labels = %w[3A/B/C/D/F 3C/D/F/G/H 3C/E/F/H/I 3E/H/I/J/K 3B/E/F/I/J 3A/E/H/I/J 3E/F/G/I/J 3D/E/I/J/L]
       slot_labels.each_with_index do |label, i|
         create(:match, stage: "r32", group_name: nil, home_team: nil, away_team: nil,
-          home_label: "1#{letters[i]}", away_label: label)
+          external_key: "m:#{match_order[i]}", home_label: "1#{letters[i]}", away_label: label)
       end
 
       predictor = described_class.new
-      leads = slot_labels.map { |label| [ label, predictor.predict(label).candidates.first ] }
+      leads = slot_labels.map { |label| predictor.predict(label).candidates.first.group_letter }
 
-      leads.each do |label, lead|
-        expect(label[1..].split("/")).to include(lead.group_letter) # from an allowed group
-        expect(lead.qualified).to be(true)                          # currently qualifying
+      expect(leads).to eq(%w[C F H E B A G D]) # official Annex C allocation for ABCDEFGH
+      leads.each_with_index do |group, i|
+        expect(slot_labels[i][1..].split("/")).to include(group) # from the slot's allowed pool
       end
-      expect(leads.map { |_label, lead| lead.group_letter }.uniq.size).to eq(8) # eight distinct opponents
     end
 
     it "returns nil for a winner-of-match slot when no bracket is loaded" do
