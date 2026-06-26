@@ -312,6 +312,44 @@ module MatchesHelper
     { others_total: others_total, by_pick: by_pick }
   end
 
+  # Per-pick crowd breakdown for the 投注分析 panel. For each valid pick: its
+  # backers (nicknames + head count + bottles staked), share of the pool, and
+  # odds. The bar/percentage are weighted by BOTTLES, not heads — knockout stakes
+  # are player-chosen, so a side's pool share (what actually drives odds and
+  # settlement) can diverge from its head count. While the match is open the odds
+  # are the "你加入后" preview (what a fresh bottle would return, viewer-
+  # independent); once locked they switch to the realized pool odds that
+  # settlement uses (nil for a side nobody backed). `best` flags the highest-odds
+  # pick(s) — the best value — but only when the field is actually split.
+  def bet_analysis_rows(match, roster, tally, votable)
+    pool = tally.stake_total
+    preview = votable ? preview_odds_by_pick(match, tally, nil) : nil
+    realized = votable ? nil : VoteOdds.from_tally(tally, allows_draw: match.allows_draw?)
+
+    rows = match.valid_picks.map do |key|
+      votes = roster[key] || []
+      bottles = tally.public_send(key)
+      odds = votable ? preview[key] : realized&.public_send("d_#{key}")
+      {
+        key: key,
+        label: pick_team_label(match, key),
+        count: votes.size,
+        bottles: bottles,
+        pct: pool.zero? ? 0 : (bottles * 100.0 / pool).round,
+        odds: odds,
+        best: false,
+        names: votes.map { |v| v.user.nickname }
+      }
+    end
+
+    decimals = rows.filter_map { |r| r[:odds] if r[:odds]&.finite? }
+    if decimals.size >= 2 && decimals.max > decimals.min
+      best = decimals.max
+      rows.each { |r| r[:best] = r[:odds]&.finite? && (r[:odds] - best).abs < 1e-9 }
+    end
+    rows
+  end
+
   # Outcome label for a pick: the team's display name, or 平局 for a draw.
   def pick_team_label(match, key)
     case key

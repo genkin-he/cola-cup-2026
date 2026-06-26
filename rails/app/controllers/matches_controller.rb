@@ -19,6 +19,7 @@ class MatchesController < ApplicationController
     @market_odds = odds[:locked] || odds[:polymarket]
     @tally = @match.vote_tally
     @vote_odds = VoteOdds.from_tally(@tally, allows_draw: @match.allows_draw?)
+    @roster = Vote.roster_by_pick(@match)
     @user_vote = current_user&.votes&.find_by(match_id: @match.id)
     @polymarket_url = polymarket_url(@match)
     @next_match_id = current_user ? next_match_id(@match) : nil

@@ -37,6 +37,20 @@ module Broadcasts
       )
     end
 
+    def broadcast_bet_analysis(match)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "match", match,
+        target: "bet_analysis_#{match.id}",
+        partial: "matches/bet_analysis",
+        locals: {
+          match: match,
+          roster: Vote.roster_by_pick(match),
+          tally: match.vote_tally,
+          votable: match.votable?
+        }
+      )
+    end
+
     def broadcast_card_big(match)
       Turbo::StreamsChannel.broadcast_replace_to(
         "schedule",

@@ -1,0 +1,36 @@
+<%# Crowd-pool breakdown for one match: per outcome, how crowded it is (bar +
+    bottle share), the odds, and who's on it. Viewer-independent (no current_user)
+    so it broadcasts cleanly to everyone via Broadcasts::Renderable. Outcome
+    colours reuse the roster-tag language (home=win / draw=amber / away=loss). %>
+<% rows = bet_analysis_rows(match, roster, tally, votable) %>
+<% tag_class = { "home" => "h", "draw" => "d", "away" => "a" } %>
+<div class="ba" id="bet_analysis_<%= match.id %>">
+  <div class="ba-head">
+    <h2 class="disp">投注分析</h2>
+    <span class="ba-total">共 <%= bottles_count(tally.stake_total) %> 瓶 · <%= tally.voters %> 人</span>
+  </div>
+
+  <% if tally.voters.zero? %>
+    <p class="ba-empty">还没有人预测，赔率待形成 🥤</p>
+  <% else %>
+    <% rows.each do |r| %>
+      <% c = tag_class[r[:key]] %>
+      <div class="ba-row">
+        <div class="ba-top">
+          <span class="ba-nm"><%= r[:label] %></span>
+          <% if r[:best] %><span class="ba-best">最优</span><% end %>
+          <span class="ba-odds <%= c %>">×<%= format_decimal(r[:odds]) %></span>
+        </div>
+        <div class="ba-track <%= c %>"><i style="width: <%= r[:pct] %>%"></i></div>
+        <div class="ba-bot">
+          <%# Bar/percentage are bottle-weighted; show both heads and bottles so
+              the split is explicit even in knockout rounds (player-chosen stakes). %>
+          <span class="ba-cnt"><b><%= r[:count] %></b> 人 · <b><%= bottles_count(r[:bottles]) %></b> 瓶 · <%= r[:pct] %>%</span>
+          <% if r[:names].any? %>
+            <span class="ba-names"><%= r[:names].join("、") %></span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

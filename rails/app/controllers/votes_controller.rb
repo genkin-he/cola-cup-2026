@@ -52,6 +52,7 @@ class VotesController < ApplicationController
     @market_odds = odds[:locked] || odds[:polymarket]
     @tally = @match.vote_tally
     @vote_odds = VoteOdds.from_tally(@tally, allows_draw: @match.allows_draw?)
+    @roster = Vote.roster_by_pick(@match)
     @votes = Vote.detailed_for(@match)
     @user_vote = current_user.votes.find_by(match_id: @match.id)
     @outcomes = helpers.match_outcomes(@match, @market_odds, @vote_odds)

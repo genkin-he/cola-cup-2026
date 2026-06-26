@@ -35,6 +35,9 @@
       <%= render "matches/vote_panel",
             match: @match, status: status, user_vote: @user_vote,
             next_match_id: @next_match_id, tally: @tally %>
+      <%= render "matches/bet_analysis",
+            match: @match, roster: @roster, tally: @tally,
+            votable: (status == :open) %>
     </div>
     <div class="dc-odds">
       <%= render "matches/odds_compare",

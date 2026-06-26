@@ -11,7 +11,10 @@ module Broadcasts
       return unless match
 
       broadcast_odds_compare(match)
-      broadcast_votes_list(match) if include_votes
+      if include_votes
+        broadcast_votes_list(match)
+        broadcast_bet_analysis(match)
+      end
       broadcast_card_big(match)
     end
   end

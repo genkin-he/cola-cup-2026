@@ -12,3 +12,7 @@
 <%= turbo_stream.replace "votes_list_#{@match.id}" do %>
   <%= render "matches/votes_list", match: @match, votes: @votes %>
 <% end %>
+<%= turbo_stream.replace "bet_analysis_#{@match.id}" do %>
+  <%= render "matches/bet_analysis", match: @match, roster: @roster,
+        tally: @tally, votable: (@status == :open) %>
+<% end %>

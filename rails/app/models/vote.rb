@@ -58,4 +58,12 @@ class Vote < ApplicationRecord
   def self.detailed_for(match)
     active.where(match_id: match.id).includes(:user).order(:updated_at)
   end
+
+  # The same roster grouped by pick (home / draw / away) — backers per outcome,
+  # each with their profile loaded. Powers the 投注分析 breakdown (per-pick names
+  # + people counts). Inherits detailed_for's active-only scope, so soft-deleted
+  # users never surface here either.
+  def self.roster_by_pick(match)
+    detailed_for(match).group_by(&:pick)
+  end
 end

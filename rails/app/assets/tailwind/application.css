@@ -1213,6 +1213,129 @@ main {
   color: var(--loss);
 }
 
+/* ───────── 投注分析 — crowd-pool breakdown ─────────
+   Sits in the right rail under the vote panel. Same section rhythm as
+   .vp/.oc/.voters (top hairline -> 30px title -> rows). Outcome colours reuse
+   the roster-tag language: home=win(green), draw=amber, away=loss(red).
+   最优 flags the best-value (highest-odds) side. */
+.ba {
+  border-top: 1px solid var(--border);
+  padding: 24px 0 4px;
+}
+.ba-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+.ba-head h2 {
+  font-family: var(--disp);
+  font-weight: 900;
+  font-size: 30px;
+  margin: 0;
+}
+.ba-total {
+  font-family: var(--num);
+  font-size: 12px;
+  color: var(--low);
+  white-space: nowrap;
+}
+.ba-row {
+  padding: 14px 0 13px;
+  border-top: 1px solid var(--border);
+}
+.ba-row:first-of-type {
+  border-top: 0;
+}
+.ba-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+.ba-nm {
+  font-family: var(--disp);
+  font-weight: 900;
+  font-size: 20px;
+  line-height: 1;
+}
+.ba-best {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 16%, transparent);
+  white-space: nowrap;
+  transform: translateY(-1px);
+}
+.ba-odds {
+  margin-left: auto;
+  font-family: var(--disp);
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+}
+.ba-odds.h {
+  color: var(--win);
+}
+.ba-odds.d {
+  color: var(--amber);
+}
+.ba-odds.a {
+  color: var(--loss);
+}
+.ba-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--elevated);
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+.ba-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+.ba-track.h i {
+  background: var(--win);
+}
+.ba-track.d i {
+  background: var(--amber);
+}
+.ba-track.a i {
+  background: var(--loss);
+}
+.ba-bot {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.ba-cnt {
+  white-space: nowrap;
+  color: var(--mid);
+}
+.ba-cnt b {
+  font-family: var(--num);
+  color: var(--hi);
+}
+.ba-names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  color: var(--low);
+}
+.ba-empty {
+  font-size: 13px;
+  color: var(--low);
+  padding: 6px 0 16px;
+}
+
 /* ───────── leaderboard ───────── */
 .lbh {
   padding: 16px 0 12px;
