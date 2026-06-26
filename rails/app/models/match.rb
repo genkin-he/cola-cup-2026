@@ -7,13 +7,14 @@ class Match < ApplicationRecord
   KNOCKOUT_STAGES = %w[r32 r16 qf sf third final].to_set.freeze
   PICKS = %w[home draw away].freeze
 
-  # Fixed stake per stage, in bottles of coke — server-determined; the client
-  # only picks a side. Group is cheap (many matches a week); stakes rise through
-  # the knockout rounds. Single source of truth.
-  STAKE_BY_STAGE = {
-    "group" => 1.0,
-    "r32" => 2.0, "r16" => 2.0, "qf" => 2.0,
-    "sf" => 5.0, "third" => 5.0, "final" => 5.0
+  # Stake options per stage, in bottles of coke. Group stays a fixed 1-bottle
+  # ante (many matches a week); the knockout rounds let the player choose how
+  # much to risk, with the bet rising through the bracket. Single source of
+  # truth for both validation and the picker UI.
+  STAKE_OPTIONS_BY_STAGE = {
+    "group" => [ 1.0 ],
+    "r32" => [ 2.0, 4.0, 6.0 ], "r16" => [ 2.0, 4.0, 6.0 ], "qf" => [ 2.0, 4.0, 6.0 ],
+    "sf" => [ 3.0, 6.0, 9.0 ], "third" => [ 3.0, 6.0, 9.0 ], "final" => [ 3.0, 6.0, 9.0 ]
   }.freeze
 
   # Voting opens by calendar day (Beijing midnight), not kickoff-minus-7-days:
@@ -158,8 +159,26 @@ class Match < ApplicationRecord
     allows_draw? ? PICKS : %w[home away]
   end
 
+  # Bottle amounts a player may stake on this match. A single-element list (group)
+  # means the stake is fixed and the picker hides the amount selector.
+  def stake_options
+    STAKE_OPTIONS_BY_STAGE.fetch(stage, [ 1.0 ])
+  end
+
+  # Middle option, pre-selected in the picker (and the only value for group).
+  def default_stake
+    options = stake_options
+    options[options.length / 2]
+  end
+
+  def valid_stake?(value)
+    stake_options.include?(value.to_f)
+  end
+
+  # Backward-compatible alias: callers that read match.stake as "this match's
+  # stake" now get the default (middle) option.
   def stake
-    STAKE_BY_STAGE.fetch(stage, 1.0)
+    default_stake
   end
 
   # Result implied by the score; nil when undecidable (no score, or a knockout

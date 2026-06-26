@@ -41,31 +41,50 @@
   <% else %>
     <% picks = match.valid_picks %>
     <% current_pick = user_vote&.pick %>
-    <% preview_odds = preview_odds_by_pick(match, tally, current_pick) %>
+    <% current_stake = user_vote&.stake || match.default_stake %>
+    <% stake_options = match.stake_options %>
+    <% pool = preview_pool(match, tally, user_vote) %>
+    <% preview_odds = preview_odds_by_pick(match, tally, current_pick, stake: current_stake) %>
     <% decimal = current_pick ? preview_odds[current_pick] : nil %>
-    <% potential = (decimal && decimal.finite?) ? match.stake * (decimal - 1) : nil %>
+    <% potential = (decimal && decimal.finite?) ? current_stake * (decimal - 1) : nil %>
     <div data-controller="vote-panel countdown"
-         data-vote-panel-stake-value="<%= match.stake %>"
          data-vote-panel-confirmed-value="<%= current_pick %>"
+         data-vote-panel-confirmed-stake-value="<%= user_vote&.stake %>"
+         data-vote-panel-default-stake-value="<%= match.default_stake %>"
+         data-vote-panel-others-total-value="<%= pool[:others_total] %>"
          data-countdown-closes-at-value="<%= match.vote_closes_at.iso8601 %>">
       <h2 class="disp">你看好谁？</h2>
       <%= form_with url: match_vote_path(match), method: :post do %>
         <%= hidden_field_tag :pick, current_pick, data: { vote_panel_target: "pickInput" } %>
+        <%= hidden_field_tag :stake, current_stake, data: { vote_panel_target: "stakeInput" } %>
         <div class="picks<%= " two" if picks.size == 2 %>">
           <% picks.each do |key| %>
             <% label = pick_team_label(match, key) %>
             <button type="button" class="p<%= " sel" if current_pick == key %>"
                     style="font-size: <%= pick_label_font_px(label) %>px"
                     data-vote-panel-target="pick" data-pick="<%= key %>"
-                    data-odds="<%= preview_odds[key] %>"
+                    data-others="<%= pool[:by_pick][key] %>"
                     data-label="<%= label %>"
                     data-action="vote-panel#select"><%= label %></button>
           <% end %>
         </div>
 
-        <p class="changenote" style="text-align:left;color:var(--mid);font-size:13px;padding:18px 0 0">
-          本场固定下注 <b><%= bottles_count(match.stake) %> 瓶</b> · 猜错就请这几瓶
-        </p>
+        <% if stake_options.size > 1 %>
+          <div class="stakes">
+            <% stake_options.each do |amount| %>
+              <button type="button" class="s<%= " sel" if current_stake == amount %>"
+                      data-vote-panel-target="stake" data-stake="<%= amount %>"
+                      data-action="vote-panel#selectStake"><%= bottles_count(amount) %> 瓶</button>
+            <% end %>
+          </div>
+          <p class="changenote" style="text-align:left;color:var(--mid);font-size:13px;padding:14px 0 0">
+            选择下注瓶数 · 猜错就请这些瓶
+          </p>
+        <% else %>
+          <p class="changenote" style="text-align:left;color:var(--mid);font-size:13px;padding:18px 0 0">
+            本场固定下注 <b><%= bottles_count(current_stake) %> 瓶</b> · 猜错就请这几瓶
+          </p>
+        <% end %>
 
         <p class="pot" data-vote-panel-target="pot">
           <% if potential %>

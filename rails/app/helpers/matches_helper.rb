@@ -288,8 +288,7 @@ module MatchesHelper
   # stake, so a side nobody has backed yet (e.g. 平 when only 葡萄牙 has votes)
   # shows no payout, when picking it would in fact win the existing pool. Returns
   # pick => decimal (>= 1.0); exactly 1.0 means there's no opposing pool to win.
-  def preview_odds_by_pick(match, tally, current_pick)
-    stake = match.stake
+  def preview_odds_by_pick(match, tally, current_pick, stake: match.default_stake)
     viewer_in_pool = current_pick ? stake : 0.0
     others_total = tally.stake_total - viewer_in_pool
 
@@ -297,6 +296,20 @@ module MatchesHelper
       others_on_pick = tally.public_send(pick) - (current_pick == pick ? stake : 0.0)
       (others_total + stake) / (others_on_pick + stake)
     end
+  end
+
+  # The crowd pool with the viewer's own existing stake removed, handed to the
+  # JS so it can recompute the payout for whatever bottle amount the player
+  # selects (knockout stakes are no longer fixed):
+  #   odds(pick, s)      = (others_total + s) / (others_on_pick + s)
+  #   potential(pick, s) = s * (others_total - others_on_pick) / (others_on_pick + s)
+  def preview_pool(match, tally, user_vote)
+    viewer_stake = user_vote&.stake.to_f
+    others_total = tally.stake_total - viewer_stake
+    by_pick = match.valid_picks.index_with do |pick|
+      tally.public_send(pick) - (user_vote&.pick == pick ? viewer_stake : 0.0)
+    end
+    { others_total: others_total, by_pick: by_pick }
   end
 
   # Outcome label for a pick: the team's display name, or 平局 for a draw.

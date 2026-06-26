@@ -40,6 +40,24 @@ RSpec.describe MatchesHelper, type: :helper do
     end
   end
 
+  describe "#preview_pool" do
+    let(:match) { build_stubbed(:match, stage: "group") }
+
+    it "returns the full crowd pool when the viewer has not voted" do
+      pool = helper.preview_pool(match, tally(home: 2.0, draw: 1.0, away: 0.0), nil)
+      expect(pool[:others_total]).to eq(3.0)
+      expect(pool[:by_pick]).to eq("home" => 2.0, "draw" => 1.0, "away" => 0.0)
+    end
+
+    it "removes the viewer's own stake from the total and their backed side" do
+      vote = build_stubbed(:vote, pick: "home", stake: 2.0)
+      pool = helper.preview_pool(match, tally(home: 2.0, draw: 1.0, away: 0.0), vote)
+      expect(pool[:others_total]).to eq(1.0)
+      expect(pool[:by_pick]["home"]).to eq(0.0)
+      expect(pool[:by_pick]["draw"]).to eq(1.0)
+    end
+  end
+
   describe "#pick_label_font_px" do
     it "keeps short labels at the max size" do
       expect(helper.pick_label_font_px("乌拉圭")).to eq(20)

@@ -101,11 +101,32 @@ RSpec.describe Match do
   end
 
   describe "stage rules" do
-    it "uses the fixed per-stage stake" do
-      expect(build(:match, stage: "group").stake).to eq(1.0)
-      expect(build(:match, stage: "r16").stake).to eq(2.0)
-      expect(build(:match, stage: "qf").stake).to eq(2.0)
-      expect(build(:match, stage: "final").stake).to eq(5.0)
+    it "exposes the per-stage stake options with a middle default" do
+      group = build(:match, stage: "group")
+      expect(group.stake_options).to eq([ 1.0 ])
+      expect(group.default_stake).to eq(1.0)
+      expect(group.stake).to eq(1.0)
+
+      r16 = build(:match, stage: "r16")
+      expect(r16.stake_options).to eq([ 2.0, 4.0, 6.0 ])
+      expect(r16.default_stake).to eq(4.0)
+
+      final = build(:match, stage: "final")
+      expect(final.stake_options).to eq([ 3.0, 6.0, 9.0 ])
+      expect(final.default_stake).to eq(6.0)
+    end
+
+    it "accepts only stakes within the stage's options" do
+      r16 = build(:match, stage: "r16")
+      expect(r16.valid_stake?(2.0)).to be(true)
+      expect(r16.valid_stake?(4)).to be(true)
+      expect(r16.valid_stake?(5.0)).to be(false)
+      expect(r16.valid_stake?(999)).to be(false)
+
+      expect(build(:match, stage: "sf").valid_stake?(9.0)).to be(true)
+      expect(build(:match, stage: "third").valid_stake?(9.0)).to be(true)
+      expect(build(:match, stage: "group").valid_stake?(1.0)).to be(true)
+      expect(build(:match, stage: "group").valid_stake?(2.0)).to be(false)
     end
 
     it "allows a draw only outside the knockout rounds" do

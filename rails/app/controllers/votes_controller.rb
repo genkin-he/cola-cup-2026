@@ -4,17 +4,19 @@ class VotesController < ApplicationController
   before_action :require_login!
   before_action :set_match
 
-  # Cast or change a prediction. Stake is server-determined by stage; the pick
-  # and votability are validated server-side. On success the three personal/shared
-  # detail fragments re-render; the model's unique (match_id, user_id) index makes
-  # a repeat vote an in-place update.
+  # Cast or change a prediction. The pick, the stake amount, and votability are
+  # all validated server-side against the stage's allowed options. On success the
+  # three personal/shared detail fragments re-render; the model's unique
+  # (match_id, user_id) index makes a repeat vote an in-place update.
   def create
     pick = params[:pick].to_s
+    stake = params[:stake].to_f
     return panel_error("该比赛不支持这个投注选项", :unprocessable_content) unless @match.valid_picks.include?(pick)
+    return panel_error("该比赛不支持这个押注瓶数", :unprocessable_content) unless @match.valid_stake?(stake)
     return panel_error("该比赛当前无法预测（未开放、已截止或对阵未定）", :conflict) unless @match.votable?
 
     vote = Vote.find_or_initialize_by(match: @match, user: current_user)
-    vote.update!(pick: pick, stake: @match.stake)
+    vote.update!(pick: pick, stake: stake)
     render_fragments
   end
 
